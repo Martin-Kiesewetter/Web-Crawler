@@ -1,16 +1,31 @@
 <?php
 
 
+/**
+ * Klasse uebernimmt das Crawlen von Websites und persistiert Metadaten in MySQL.
+ */
 class webanalyse
 {
+    /**
+     * @var mysqli|null Verbindung zur Screaming Frog Datenbank.
+     */
     var $db;
 
+    /**
+     * Initialisiert die Datenbankverbindung fuer die Crawl-Session.
+     */
     function __construct()
     {
         $this->db = mysqli_connect("localhost", "root", "", "screaming_frog");
     }
 
 
+    /**
+     * Holt eine einzelne URL via cURL und liefert Response-Metadaten.
+     *
+     * @param string $url Zieladresse fuer den Abruf.
+     * @return array<string,mixed> Antwortdaten oder ein "error"-Schluessel.
+     */
     function getWebsite($url)
     {
         // cURL-Session initialisieren
@@ -70,7 +85,12 @@ class webanalyse
         ];
     }
 
-    // Multi-cURL Funktion für mehrere URLs
+    /**
+     * Ruft mehrere URLs parallel via curl_multi ab.
+     *
+     * @param array<int,string> $urls Liste von Ziel-URLs.
+     * @return array<string,array<string,mixed>> Antworten je URL.
+     */
     function getMultipleWebsites($urls)
     {
 
@@ -159,6 +179,14 @@ class webanalyse
 
 
 
+    /**
+     * Persistiert Response-Daten und stoesst die Analyse der gefundenen Links an.
+     *
+     * @param int $crawlID Identifier der Crawl-Session.
+     * @param string $url Ursprung-URL, deren Antwort verarbeitet wird.
+     * @param array<string,mixed> $data Ergebnis der HTTP-Abfrage.
+     * @return void
+     */
     function processResults(int $crawlID, string $url, array $data)
     {
         if (!isset($data['error'])) {
@@ -188,6 +216,14 @@ class webanalyse
     }
 
 
+    /**
+     * Extrahiert Links aus einer Antwort und legt neue URL-Datensaetze an.
+     *
+     * @param int $crawlID Identifier der Crawl-Session.
+     * @param string $body HTML-Koerper der Antwort.
+     * @param string $url Bearbeitete URL, dient als Kontext fuer relative Links.
+     * @return void
+     */
     function findNewUrls(int $crawlID, string $body, string $url) {
 
 
@@ -241,6 +277,12 @@ class webanalyse
     }
 
 
+    /**
+     * Startet einen Crawl-Durchlauf fuer unbehandelte URLs.
+     *
+     * @param int $crawlID Identifier der Crawl-Session.
+     * @return void
+     */
     function doCrawl(int $crawlID)
     {
 
@@ -275,6 +317,13 @@ class webanalyse
 
 
 
+    /**
+     * Parst HTML-Inhalt und liefert eine strukturierte Liste gefundener Links.
+     *
+     * @param string $html Rohes HTML-Dokument.
+     * @param string $baseUrl Basis-URL fuer die Aufloesung relativer Pfade.
+     * @return array<int,array<string,mixed>> Gesammelte Linkdaten.
+     */
     function extractLinks($html, $baseUrl = '')
     {
         $links = [];
@@ -324,7 +373,11 @@ class webanalyse
     }
 
     /**
-     * Prüft ob ein Link extern ist
+     * Prueft, ob ein Link aus Sicht der Basis-URL extern ist.
+     *
+     * @param string $href Ziel des Links.
+     * @param string $baseUrl Ausgangsadresse zur Domainabgleichung.
+     * @return bool|null True fuer extern, false fuer intern, null falls undefiniert.
      */
     private function isExternalLink($href, $baseUrl)
     {
@@ -341,6 +394,13 @@ class webanalyse
         return $baseDomain !== $linkDomain;
     }
 
+    /**
+     * Prueft, ob ein Link derselben Domain wie die Basis-URL entspricht.
+     *
+     * @param string $href Ziel des Links.
+     * @param string $baseUrl Ausgangsadresse zur Domainabgleichung.
+     * @return bool|null True fuer intern, false fuer extern, null falls undefiniert.
+     */
     private function isInternalLink($href, $baseUrl)
     {
         if (empty($baseUrl)) return null;
@@ -357,7 +417,10 @@ class webanalyse
     }
 
     /**
-     * Bestimmt den Typ des Links
+     * Leitet den Link-Typ anhand gaengiger Protokolle und Muster ab.
+     *
+     * @param string $href Ziel des Links.
+     * @return string Beschreibender Typ wie "absolute" oder "email".
      */
     private function getLinkType($href)
     {
@@ -372,7 +435,10 @@ class webanalyse
 
 
     /**
-     * Funktion zum Gruppieren der Links nach Typ
+     * Gruppiert Links anhand ihres vorab bestimmten Typs.
+     *
+     * @param array<int,array<string,mixed>> $links Liste der extrahierten Links.
+     * @return array<string,array<int,array<string,mixed>>> Links nach Typ gruppiert.
      */
     function groupLinksByType($links)
     {
