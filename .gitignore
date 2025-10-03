@@ -1,1 +1,25 @@
-/.idea/
+# IDE
+.idea/
+.vscode/
+
+# Dependencies
+vendor/
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.cache
+
+# Docker
+docker-compose.override.yml
