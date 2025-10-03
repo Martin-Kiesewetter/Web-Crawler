@@ -38,8 +38,5 @@ RUN chown -R www-data:www-data /var/www/html \
 # Expose port 80
 EXPOSE 80
 
-# Start script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-CMD ["/start.sh"]
+# Start PHP-FPM and Nginx
+CMD php-fpm -D && nginx -g 'daemon off;'
