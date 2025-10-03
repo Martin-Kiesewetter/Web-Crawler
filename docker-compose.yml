@@ -10,6 +10,9 @@ services:
       - "8080:80"
     volumes:
       - ./src:/var/www/html
+      - ./tests:/var/www/tests
+      - ./composer.json:/var/www/composer.json
+      - ./composer.lock:/var/www/composer.lock
       - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - mariadb
