@@ -8,15 +8,18 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DomCrawler\Crawler as DomCrawler;
 
-class Crawler {
+class Crawler
+{
     private \PDO $db;
     private Client $client;
     private int $concurrency = 10; // Parallel requests
+    /** @var array<string, bool> */
     private array $visited = [];
     private int $crawlJobId;
     private string $baseDomain;
 
-    public function __construct(int $crawlJobId) {
+    public function __construct(int $crawlJobId)
+    {
         $this->db = Database::getInstance();
         $this->crawlJobId = $crawlJobId;
         $this->client = new Client([
@@ -28,8 +31,10 @@ class Crawler {
         ]);
     }
 
-    public function start(string $startUrl): void {
-        $this->baseDomain = strtolower(parse_url($startUrl, PHP_URL_HOST));
+    public function start(string $startUrl): void
+    {
+        $host = parse_url($startUrl, PHP_URL_HOST);
+        $this->baseDomain = strtolower($host ?: '');
 
         // Update job status
         $stmt = $this->db->prepare("UPDATE crawl_jobs SET status = 'running', started_at = NOW() WHERE id = ?");
@@ -48,7 +53,8 @@ class Crawler {
         $stmt->execute([$this->crawlJobId]);
     }
 
-    private function addToQueue(string $url, int $depth): void {
+    private function addToQueue(string $url, int $depth): void
+    {
         if (isset($this->visited[$url])) {
             return;
         }
@@ -63,7 +69,8 @@ class Crawler {
         }
     }
 
-    private function processQueue(): void {
+    private function processQueue(): void
+    {
         while (true) {
             // Get pending URLs
             $stmt = $this->db->prepare(
@@ -82,14 +89,18 @@ class Crawler {
         }
     }
 
-    private function crawlBatch(array $urls): void {
-        $requests = function() use ($urls) {
+    /**
+     * @param array<int, array{id: int, url: string, depth: int}> $urls
+     */
+    private function crawlBatch(array $urls): void
+    {
+        $requests = function () use ($urls) {
             foreach ($urls as $item) {
                 // Mark as processing
                 $stmt = $this->db->prepare("UPDATE crawl_queue SET status = 'processing' WHERE id = ?");
                 $stmt->execute([$item['id']]);
 
-                yield function() use ($item) {
+                yield function () use ($item) {
                     return $this->client->getAsync($item['url']);
                 };
             }
@@ -110,7 +121,12 @@ class Crawler {
         $pool->promise()->wait();
     }
 
-    private function handleResponse(array $queueItem, $response): void {
+    /**
+     * @param array{id: int, url: string, depth: int} $queueItem
+     * @param \Psr\Http\Message\ResponseInterface $response
+     */
+    private function handleResponse(array $queueItem, $response): void
+    {
         $url = $queueItem['url'];
         $depth = $queueItem['depth'];
 
@@ -143,7 +159,7 @@ class Crawler {
         }
 
         // Extract and save links
-        if (str_contains($contentType, 'text/html')) {
+        if (str_contains($contentType, 'text/html') && is_int($pageId)) {
             echo "Extracting links from: $url (pageId: $pageId)\n";
             $this->extractLinks($domCrawler, $url, $pageId, $depth);
         } else {
@@ -155,7 +171,8 @@ class Crawler {
         $stmt->execute([$queueItem['id']]);
     }
 
-    private function extractLinks(DomCrawler $crawler, string $sourceUrl, int $pageId, int $depth): void {
+    private function extractLinks(DomCrawler $crawler, string $sourceUrl, int $pageId, int $depth): void
+    {
         $linkCount = 0;
         $crawler->filter('a')->each(function (DomCrawler $node) use ($sourceUrl, $pageId, $depth, &$linkCount) {
             try {
@@ -176,7 +193,8 @@ class Crawler {
                 $isNofollow = str_contains($rel, 'nofollow');
 
                 // Check if internal (same domain, no subdomains)
-                $targetDomain = strtolower(parse_url($targetUrl, PHP_URL_HOST) ?? '');
+                $targetHost = parse_url($targetUrl, PHP_URL_HOST);
+                $targetDomain = strtolower($targetHost ?: '');
                 $isInternal = ($targetDomain === $this->baseDomain);
 
                 // Save link
@@ -207,7 +225,8 @@ class Crawler {
         echo "Processed $linkCount links from $sourceUrl\n";
     }
 
-    private function makeAbsoluteUrl(string $url, string $base): string {
+    private function makeAbsoluteUrl(string $url, string $base): string
+    {
         if (filter_var($url, FILTER_VALIDATE_URL)) {
             return $url;
         }
@@ -225,14 +244,20 @@ class Crawler {
         return "$scheme://$host$basePath$url";
     }
 
-    private function handleError(array $queueItem, $reason): void {
+    /**
+     * @param array{id: int, url: string, depth: int} $queueItem
+     * @param \GuzzleHttp\Exception\RequestException $reason
+     */
+    private function handleError(array $queueItem, $reason): void
+    {
         $stmt = $this->db->prepare(
             "UPDATE crawl_queue SET status = 'failed', processed_at = NOW(), retry_count = retry_count + 1 WHERE id = ?"
         );
         $stmt->execute([$queueItem['id']]);
     }
 
-    private function updateJobStats(): void {
+    private function updateJobStats(): void
+    {
         $stmt = $this->db->prepare(
             "UPDATE crawl_jobs SET
             total_pages = (SELECT COUNT(*) FROM pages WHERE crawl_job_id = ?),
@@ -242,7 +267,8 @@ class Crawler {
         $stmt->execute([$this->crawlJobId, $this->crawlJobId, $this->crawlJobId]);
     }
 
-    private function normalizeUrl(string $url): string {
+    private function normalizeUrl(string $url): string
+    {
         // Parse URL
         $parts = parse_url($url);
 

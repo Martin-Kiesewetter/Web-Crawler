@@ -18,7 +18,8 @@ class CrawlerIntegrationTest extends TestCase
         // Create a test job
         $stmt = $this->db->prepare("INSERT INTO crawl_jobs (domain, status) VALUES (?, 'pending')");
         $stmt->execute(['https://httpbin.org']);
-        $this->testJobId = $this->db->lastInsertId();
+        $lastId = $this->db->lastInsertId();
+        $this->testJobId = is_numeric($lastId) ? (int)$lastId : 0;
     }
 
     protected function tearDown(): void

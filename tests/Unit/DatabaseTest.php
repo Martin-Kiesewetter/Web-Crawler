@@ -42,6 +42,7 @@ class DatabaseTest extends TestCase
     {
         $db = Database::getInstance();
         $stmt = $db->query('SELECT 1 as test');
+        $this->assertNotFalse($stmt, 'Query failed');
         $result = $stmt->fetch();
 
         $this->assertEquals(['test' => 1], $result);

@@ -1,0 +1,7 @@
+parameters:
+    level: 8
+    paths:
+        - /var/www/html
+        - /var/www/tests
+    excludePaths:
+        - /var/www/html/vendor

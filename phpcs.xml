@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<ruleset name="ScreamingFrog">
+    <description>PHP_CodeSniffer configuration</description>
+
+    <!-- Use PSR-12 coding standard -->
+    <rule ref="PSR12"/>
+
+    <!-- Paths to check -->
+    <file>/var/www/html</file>
+    <file>/var/www/tests</file>
+
+    <!-- Exclude vendor directory -->
+    <exclude-pattern>/var/www/html/vendor/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+
+    <!-- Show progress and colors -->
+    <arg name="colors"/>
+    <arg value="sp"/>
+</ruleset>

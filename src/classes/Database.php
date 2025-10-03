@@ -5,12 +5,16 @@ namespace App;
 use PDO;
 use PDOException;
 
-class Database {
+class Database
+{
     private static ?PDO $instance = null;
 
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
-    public static function getInstance(): PDO {
+    public static function getInstance(): PDO
+    {
         if (self::$instance === null) {
             try {
                 self::$instance = new PDO(

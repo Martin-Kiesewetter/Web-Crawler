@@ -56,3 +56,57 @@ docker-compose up -d --build
 ## Entwicklung
 
 Die Anwendungsdateien befinden sich im `src/` Verzeichnis und werden als Volume in den Container gemountet, sodass Änderungen sofort sichtbar sind.
+
+## Tests & Code-Qualität
+
+### Unit Tests ausführen
+
+Die Anwendung verwendet PHPUnit für Unit- und Integrationstests:
+
+```bash
+# Alle Tests ausführen
+docker-compose exec php sh -c "php /var/www/html/vendor/bin/phpunit /var/www/tests/"
+
+# Alternative mit Composer-Script
+docker-compose exec php composer test
+```
+
+Die Tests befinden sich in:
+- `tests/Unit/` - Unit Tests
+- `tests/Integration/` - Integration Tests
+
+### Statische Code-Analyse mit PHPStan
+
+PHPStan ist auf Level 8 (höchstes Level) konfiguriert und analysiert den gesamten Code:
+
+```bash
+# PHPStan ausführen
+docker-compose exec php sh -c "php -d memory_limit=512M /var/www/html/vendor/bin/phpstan analyse -c /var/www/phpstan.neon"
+
+# Alternative mit Composer-Script
+docker-compose exec php composer phpstan
+```
+
+**PHPStan Konfiguration:**
+- Level: 8 (strictest)
+- Analysierte Pfade: `src/` und `tests/`
+- Ausgeschlossen: `vendor/` Ordner
+- Konfigurationsdatei: `phpstan.neon`
+
+### Code Style Prüfung mit PHP_CodeSniffer
+
+PHP_CodeSniffer (PHPCS) prüft den Code gegen PSR-12 Standards:
+
+```bash
+# Code Style prüfen
+docker-compose exec php composer phpcs
+
+# Code Style automatisch korrigieren
+docker-compose exec php composer phpcbf
+```
+
+**PHPCS Konfiguration:**
+- Standard: PSR-12
+- Analysierte Pfade: `src/` und `tests/`
+- Ausgeschlossen: `vendor/` Ordner
+- Auto-Fix verfügbar mit `phpcbf`

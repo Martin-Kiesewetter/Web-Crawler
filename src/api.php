@@ -73,6 +73,9 @@ try {
 
         case 'jobs':
             $stmt = $db->query("SELECT * FROM crawl_jobs ORDER BY created_at DESC LIMIT 50");
+            if ($stmt === false) {
+                throw new Exception('Failed to query jobs');
+            }
             $jobs = $stmt->fetchAll();
 
             echo json_encode([
