@@ -127,6 +127,42 @@ try {
             ]);
             break;
 
+        case 'recrawl':
+            $jobId = $_POST['job_id'] ?? 0;
+            $domain = $_POST['domain'] ?? '';
+
+            if (empty($domain)) {
+                throw new Exception('Domain is required');
+            }
+
+            // Delete all related data for this job
+            $stmt = $db->prepare("DELETE FROM crawl_queue WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM links WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM pages WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            // Reset job status
+            $stmt = $db->prepare(
+                "UPDATE crawl_jobs SET status = 'pending', total_pages = 0, total_links = 0, " .
+                "started_at = NULL, completed_at = NULL WHERE id = ?"
+            );
+            $stmt->execute([$jobId]);
+
+            // Start crawling in background
+            $cmd = "php " . __DIR__ . "/crawler-worker.php $jobId > /dev/null 2>&1 &";
+            exec($cmd);
+
+            echo json_encode([
+                'success' => true,
+                'job_id' => $jobId,
+                'message' => 'Recrawl started'
+            ]);
+            break;
+
         default:
             throw new Exception('Invalid action');
     }

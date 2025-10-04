@@ -211,8 +211,8 @@ class Crawler
 
                 // Save link
                 $stmt = $this->db->prepare(
-                    "INSERT INTO links (page_id, crawl_job_id, source_url, target_url, link_text, is_nofollow, is_internal)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO links (page_id, crawl_job_id, source_url, target_url, " .
+                    "link_text, is_nofollow, is_internal) VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
                 $stmt->execute([
                     $pageId,

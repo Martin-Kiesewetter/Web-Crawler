@@ -338,6 +338,7 @@
                             <td>${job.started_at || '-'}</td>
                             <td>
                                 <button class="action-btn" onclick="viewJob(${job.id})">Ansehen</button>
+                                <button class="action-btn" onclick="recrawlJob(${job.id}, '${job.domain}')">Recrawl</button>
                                 <button class="action-btn" onclick="deleteJob(${job.id})">Löschen</button>
                             </td>
                         </tr>
@@ -469,6 +470,31 @@
                 }
             } catch (e) {
                 alert('Fehler beim Löschen: ' + e.message);
+            }
+        }
+
+        async function recrawlJob(jobId, domain) {
+            if (!confirm('Job-Ergebnisse löschen und neu crawlen?')) return;
+
+            const formData = new FormData();
+            formData.append('job_id', jobId);
+            formData.append('domain', domain);
+
+            try {
+                const response = await fetch('/api.php?action=recrawl', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    loadJobs();
+                    alert('Recrawl gestartet! Job ID: ' + data.job_id);
+                } else {
+                    alert('Fehler: ' + data.error);
+                }
+            } catch (e) {
+                alert('Fehler beim Recrawl: ' + e.message);
             }
         }
 
