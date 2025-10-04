@@ -152,14 +152,18 @@ class Crawler
         $pageId = $this->db->lastInsertId();
 
         // If pageId is 0, fetch it manually
-        if ($pageId == 0) {
+        if ($pageId == 0 || $pageId === '0') {
             $stmt = $this->db->prepare("SELECT id FROM pages WHERE crawl_job_id = ? AND url = ?");
             $stmt->execute([$this->crawlJobId, $url]);
-            $pageId = $stmt->fetchColumn();
+            $fetchedId = $stmt->fetchColumn();
+            $pageId = is_numeric($fetchedId) ? (int)$fetchedId : 0;
         }
 
+        // Ensure pageId is an integer
+        $pageId = is_numeric($pageId) ? (int)$pageId : 0;
+
         // Extract and save links
-        if (str_contains($contentType, 'text/html') && is_int($pageId)) {
+        if (str_contains($contentType, 'text/html') && $pageId > 0) {
             echo "Extracting links from: $url (pageId: $pageId)\n";
             $this->extractLinks($domCrawler, $url, $pageId, $depth);
         } else {
