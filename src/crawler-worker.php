@@ -1,6 +1,14 @@
 #!/usr/bin/env php
 <?php
 
+/**
+ * Web Crawler - Background Worker
+ *
+ * @copyright Copyright (c) 2025 Martin Kiesewetter
+ * @author    Martin Kiesewetter <mki@kies-media.de>
+ * @link      https://kies-media.de
+ */
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Database;

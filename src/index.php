@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!--
+/**
+ * Web Crawler - Main Interface
+ *
+ * @copyright Copyright (c) 2025 Martin Kiesewetter
+ * @author    Martin Kiesewetter <mki@kies-media.de>
+ * @link      https://kies-media.de
+ */
+-->
 <html lang="de">
 <head>
     <meta charset="UTF-8">

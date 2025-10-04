@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Web Crawler - Database Class
+ *
+ * @copyright Copyright (c) 2025 Martin Kiesewetter
+ * @author    Martin Kiesewetter <mki@kies-media.de>
+ * @link      https://kies-media.de
+ */
+
 namespace App;
 
 use PDO;
