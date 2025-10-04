@@ -1,3 +1,9 @@
+# Web Crawler - Docker Compose Configuration
+#
+# @copyright Copyright (c) 2025 Martin Kiesewetter
+# @author    Martin Kiesewetter <mki@kies-media.de>
+# @link      https://kies-media.de
+
 version: '3.8'
 
 services:

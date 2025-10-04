@@ -1,3 +1,11 @@
+/**
+ * Web Crawler - Database Schema
+ *
+ * @copyright Copyright (c) 2025 Martin Kiesewetter
+ * @author    Martin Kiesewetter <mki@kies-media.de>
+ * @link      https://kies-media.de
+ */
+
 -- Database initialization script for Web Crawler
 
 -- Crawl Jobs Table

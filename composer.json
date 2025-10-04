@@ -1,4 +1,5 @@
 {
+    "_comment": "Web Crawler - Composer Configuration | Copyright (c) 2025 Martin Kiesewetter <mki@kies-media.de> | https://kies-media.de",
     "name": "web-crawler/app",
     "description": "Web Crawler Application with Parallel Processing",
     "type": "project",
