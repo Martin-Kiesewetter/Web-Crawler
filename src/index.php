@@ -250,6 +250,8 @@
                 <div class="tabs">
                     <button class="tab active" onclick="switchTab('pages')">Seiten</button>
                     <button class="tab" onclick="switchTab('links')">Links</button>
+                    <button class="tab" onclick="switchTab('broken')">Broken Links</button>
+                    <button class="tab" onclick="switchTab('seo')">SEO Analysis</button>
                 </div>
 
                 <div class="tab-content active" id="pages-tab">
@@ -283,6 +285,43 @@
                             <tr><td colspan="5" class="loading">Keine Links gefunden</td></tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div class="tab-content" id="broken-tab">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Status Code</th>
+                                <th>Titel</th>
+                                <th>Gecrawlt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brokenBody">
+                            <tr><td colspan="4" class="loading">Keine defekten Links gefunden</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="seo-tab">
+                    <h3>SEO Issues</h3>
+                    <div id="seoStats" style="margin-bottom: 20px;"></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Title (Länge)</th>
+                                <th>Meta Description (Länge)</th>
+                                <th>Issues</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seoIssuesBody">
+                            <tr><td colspan="4" class="loading">Keine SEO-Probleme gefunden</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 style="margin-top: 30px;">Duplicate Content</h3>
+                    <div id="seoDuplicatesBody"></div>
                 </div>
             </div>
         </div>
@@ -439,6 +478,75 @@
                             <td>${link.is_internal ? 'Intern' : '<span class="external">Extern</span>'}</td>
                         </tr>
                     `).join('');
+                }
+
+                // Load broken links
+                const brokenResponse = await fetch(`/api.php?action=broken-links&job_id=${currentJobId}`);
+                const brokenData = await brokenResponse.json();
+
+                if (brokenData.success && brokenData.broken_links.length > 0) {
+                    document.getElementById('brokenBody').innerHTML = brokenData.broken_links.map(page => `
+                        <tr>
+                            <td class="url-cell" title="${page.url}">${page.url}</td>
+                            <td><span class="status failed">${page.status_code || 'Error'}</span></td>
+                            <td>${page.title || '-'}</td>
+                            <td>${page.crawled_at}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    document.getElementById('brokenBody').innerHTML = '<tr><td colspan="4" class="loading">Keine defekten Links gefunden</td></tr>';
+                }
+
+                // Load SEO analysis
+                const seoResponse = await fetch(`/api.php?action=seo-analysis&job_id=${currentJobId}`);
+                const seoData = await seoResponse.json();
+
+                if (seoData.success) {
+                    // SEO Stats
+                    document.getElementById('seoStats').innerHTML = `
+                        <div class="stat-box">
+                            <div class="stat-label">Total Pages</div>
+                            <div class="stat-value">${seoData.total_pages}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Pages with Issues</div>
+                            <div class="stat-value">${seoData.issues.length}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Duplicates Found</div>
+                            <div class="stat-value">${seoData.duplicates.length}</div>
+                        </div>
+                    `;
+
+                    // SEO Issues
+                    if (seoData.issues.length > 0) {
+                        document.getElementById('seoIssuesBody').innerHTML = seoData.issues.map(item => `
+                            <tr>
+                                <td class="url-cell" title="${item.url}">${item.url}</td>
+                                <td>${item.title || '-'} (${item.title_length})</td>
+                                <td>${item.meta_description ? item.meta_description.substring(0, 50) + '...' : '-'} (${item.meta_length})</td>
+                                <td><span class="nofollow">${item.issues.join(', ')}</span></td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        document.getElementById('seoIssuesBody').innerHTML = '<tr><td colspan="4" class="loading">Keine SEO-Probleme gefunden</td></tr>';
+                    }
+
+                    // Duplicates
+                    if (seoData.duplicates.length > 0) {
+                        document.getElementById('seoDuplicatesBody').innerHTML = seoData.duplicates.map(dup => `
+                            <div class="stat-box" style="margin-bottom: 15px;">
+                                <div class="stat-label">Duplicate ${dup.type}</div>
+                                <div style="font-size: 14px; margin: 10px 0;"><strong>${dup.content}</strong></div>
+                                <div style="font-size: 12px;">Found on ${dup.urls.length} pages:</div>
+                                <ul style="margin-top: 5px; font-size: 12px;">
+                                    ${dup.urls.map(url => `<li>${url}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `).join('');
+                    } else {
+                        document.getElementById('seoDuplicatesBody').innerHTML = '<p>Keine doppelten Inhalte gefunden</p>';
+                    }
                 }
 
                 // Update jobs table

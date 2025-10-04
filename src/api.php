@@ -116,6 +116,107 @@ try {
             ]);
             break;
 
+        case 'broken-links':
+            $jobId = $_GET['job_id'] ?? 0;
+            $stmt = $db->prepare(
+                "SELECT * FROM pages " .
+                "WHERE crawl_job_id = ? AND (status_code >= 400 OR status_code = 0) " .
+                "ORDER BY status_code DESC, url"
+            );
+            $stmt->execute([$jobId]);
+            $brokenLinks = $stmt->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'broken_links' => $brokenLinks
+            ]);
+            break;
+
+        case 'seo-analysis':
+            $jobId = $_GET['job_id'] ?? 0;
+            $stmt = $db->prepare(
+                "SELECT id, url, title, meta_description, status_code FROM pages " .
+                "WHERE crawl_job_id = ? ORDER BY url"
+            );
+            $stmt->execute([$jobId]);
+            $pages = $stmt->fetchAll();
+
+            $issues = [];
+            foreach ($pages as $page) {
+                $pageIssues = [];
+                $titleLen = mb_strlen($page['title'] ?? '');
+                $descLen = mb_strlen($page['meta_description'] ?? '');
+
+                // Title issues (Google: 50-60 chars optimal)
+                if (empty($page['title'])) {
+                    $pageIssues[] = 'Title missing';
+                } elseif ($titleLen < 30) {
+                    $pageIssues[] = "Title too short ({$titleLen} chars)";
+                } elseif ($titleLen > 60) {
+                    $pageIssues[] = "Title too long ({$titleLen} chars)";
+                }
+
+                // Meta description issues (Google: 120-160 chars optimal)
+                if (empty($page['meta_description'])) {
+                    $pageIssues[] = 'Meta description missing';
+                } elseif ($descLen < 70) {
+                    $pageIssues[] = "Meta description too short ({$descLen} chars)";
+                } elseif ($descLen > 160) {
+                    $pageIssues[] = "Meta description too long ({$descLen} chars)";
+                }
+
+                if (!empty($pageIssues)) {
+                    $issues[] = [
+                        'url' => $page['url'],
+                        'title' => $page['title'],
+                        'title_length' => $titleLen,
+                        'meta_description' => $page['meta_description'],
+                        'meta_length' => $descLen,
+                        'issues' => $pageIssues
+                    ];
+                }
+            }
+
+            // Find duplicates
+            $titleCounts = [];
+            $descCounts = [];
+            foreach ($pages as $page) {
+                if (!empty($page['title'])) {
+                    $titleCounts[$page['title']][] = $page['url'];
+                }
+                if (!empty($page['meta_description'])) {
+                    $descCounts[$page['meta_description']][] = $page['url'];
+                }
+            }
+
+            $duplicates = [];
+            foreach ($titleCounts as $title => $urls) {
+                if (count($urls) > 1) {
+                    $duplicates[] = [
+                        'type' => 'title',
+                        'content' => $title,
+                        'urls' => $urls
+                    ];
+                }
+            }
+            foreach ($descCounts as $desc => $urls) {
+                if (count($urls) > 1) {
+                    $duplicates[] = [
+                        'type' => 'meta_description',
+                        'content' => $desc,
+                        'urls' => $urls
+                    ];
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'issues' => $issues,
+                'duplicates' => $duplicates,
+                'total_pages' => count($pages)
+            ]);
+            break;
+
         case 'delete':
             $jobId = $_POST['job_id'] ?? 0;
             $stmt = $db->prepare("DELETE FROM crawl_jobs WHERE id = ?");

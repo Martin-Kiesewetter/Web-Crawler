@@ -150,13 +150,18 @@ class Crawler
             ? $domCrawler->filter('title')->text()
             : '';
 
+        $metaDescription = $domCrawler->filter('meta[name="description"]')->count() > 0
+            ? $domCrawler->filter('meta[name="description"]')->attr('content')
+            : '';
+
         $stmt = $this->db->prepare(
-            "INSERT INTO pages (crawl_job_id, url, title, status_code, content_type)
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), status_code = VALUES(status_code)"
+            "INSERT INTO pages (crawl_job_id, url, title, meta_description, status_code, content_type) " .
+            "VALUES (?, ?, ?, ?, ?, ?) " .
+            "ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), status_code = VALUES(status_code), " .
+            "meta_description = VALUES(meta_description)"
         );
 
-        $stmt->execute([$this->crawlJobId, $url, $title, $statusCode, $contentType]);
+        $stmt->execute([$this->crawlJobId, $url, $title, $metaDescription, $statusCode, $contentType]);
         $pageId = $this->db->lastInsertId();
 
         // If pageId is 0, fetch it manually
