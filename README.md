@@ -1,6 +1,16 @@
-# PHP Docker Anwendung
+# Web Crawler
 
 Eine PHP-Anwendung mit MariaDB, die in Docker läuft.
+
+## Copyright & Lizenz
+
+**Copyright © 2025 Martin Kiesewetter**
+
+- **Autor:** Martin Kiesewetter
+- **E-Mail:** mki@kies-media.de
+- **Website:** [https://kies-media.de](https://kies-media.de)
+
+---
 
 ## Anforderungen
 
