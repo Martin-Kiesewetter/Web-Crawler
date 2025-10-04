@@ -13,6 +13,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Crawler</title>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -207,6 +217,58 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        /* DataTables Styling */
+        .dataTables_wrapper {
+            padding: 20px 0;
+        }
+
+        .dataTables_filter input {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+
+        .dataTables_length select {
+            padding: 6px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            margin: 0 10px;
+        }
+
+        .dataTables_info {
+            padding-top: 10px;
+            color: #7f8c8d;
+        }
+
+        .dataTables_paginate {
+            padding-top: 10px;
+        }
+
+        .dataTables_paginate .paginate_button {
+            padding: 6px 12px;
+            margin: 0 2px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .dataTables_paginate .paginate_button.current {
+            background: #3498db;
+            color: white !important;
+            border-color: #3498db;
+        }
+
+        .dataTables_paginate .paginate_button:hover {
+            background: #ecf0f1;
+        }
+
+        .dataTables_paginate .paginate_button.disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -223,7 +285,7 @@
 
         <div class="card">
             <h2>Crawl Jobs</h2>
-            <table id="jobsTable">
+            <table id="jobsTable" class="display">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -256,7 +318,7 @@
                 </div>
 
                 <div class="tab-content active" id="pages-tab">
-                    <table>
+                    <table id="pagesTable" class="display">
                         <thead>
                             <tr>
                                 <th>URL</th>
@@ -272,7 +334,7 @@
                 </div>
 
                 <div class="tab-content" id="links-tab">
-                    <table>
+                    <table id="linksTable" class="display">
                         <thead>
                             <tr>
                                 <th>Von</th>
@@ -289,7 +351,7 @@
                 </div>
 
                 <div class="tab-content" id="broken-tab">
-                    <table>
+                    <table id="brokenTable" class="display">
                         <thead>
                             <tr>
                                 <th>URL</th>
@@ -307,7 +369,7 @@
                 <div class="tab-content" id="redirects-tab">
                     <h3>Redirect Statistics</h3>
                     <div id="redirectStats" class="stats" style="margin-bottom: 20px;"></div>
-                    <table>
+                    <table id="redirectsTable" class="display">
                         <thead>
                             <tr>
                                 <th>URL</th>
@@ -326,7 +388,7 @@
                 <div class="tab-content" id="seo-tab">
                     <h3>SEO Issues</h3>
                     <div id="seoStats" style="margin-bottom: 20px;"></div>
-                    <table>
+                    <table id="seoTable" class="display">
                         <thead>
                             <tr>
                                 <th>URL</th>
@@ -380,12 +442,19 @@
             }
         }
 
+        let jobsDataTable = null;
+
         async function loadJobs() {
             try {
                 const response = await fetch('/api.php?action=jobs');
                 const data = await response.json();
 
                 if (data.success) {
+                    // Destroy existing DataTable if it exists
+                    if (jobsDataTable) {
+                        jobsDataTable.destroy();
+                    }
+
                     const tbody = document.getElementById('jobsBody');
                     tbody.innerHTML = data.jobs.map(job => `
                         <tr>
@@ -402,6 +471,25 @@
                             </td>
                         </tr>
                     `).join('');
+
+                    // Initialize DataTable
+                    jobsDataTable = $('#jobsTable').DataTable({
+                        pageLength: 25,
+                        order: [[0, 'desc']],
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
                 }
             } catch (e) {
                 console.error('Fehler beim Laden der Jobs:', e);
@@ -473,6 +561,10 @@
                 const pagesResponse = await fetch(`/api.php?action=pages&job_id=${currentJobId}`);
                 const pagesData = await pagesResponse.json();
 
+                if ($.fn.DataTable.isDataTable('#pagesTable')) {
+                    $('#pagesTable').DataTable().destroy();
+                }
+
                 if (pagesData.success && pagesData.pages.length > 0) {
                     document.getElementById('pagesBody').innerHTML = pagesData.pages.map(page => `
                         <tr>
@@ -482,11 +574,32 @@
                             <td>${page.crawled_at}</td>
                         </tr>
                     `).join('');
+
+                    $('#pagesTable').DataTable({
+                        pageLength: 50,
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
                 }
 
                 // Load links
                 const linksResponse = await fetch(`/api.php?action=links&job_id=${currentJobId}`);
                 const linksData = await linksResponse.json();
+
+                if ($.fn.DataTable.isDataTable('#linksTable')) {
+                    $('#linksTable').DataTable().destroy();
+                }
 
                 if (linksData.success && linksData.links.length > 0) {
                     document.getElementById('linksBody').innerHTML = linksData.links.map(link => `
@@ -498,11 +611,32 @@
                             <td>${link.is_internal ? 'Intern' : '<span class="external">Extern</span>'}</td>
                         </tr>
                     `).join('');
+
+                    $('#linksTable').DataTable({
+                        pageLength: 50,
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
                 }
 
                 // Load broken links
                 const brokenResponse = await fetch(`/api.php?action=broken-links&job_id=${currentJobId}`);
                 const brokenData = await brokenResponse.json();
+
+                if ($.fn.DataTable.isDataTable('#brokenTable')) {
+                    $('#brokenTable').DataTable().destroy();
+                }
 
                 if (brokenData.success && brokenData.broken_links.length > 0) {
                     document.getElementById('brokenBody').innerHTML = brokenData.broken_links.map(page => `
@@ -513,6 +647,23 @@
                             <td>${page.crawled_at}</td>
                         </tr>
                     `).join('');
+
+                    $('#brokenTable').DataTable({
+                        pageLength: 25,
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
                 } else {
                     document.getElementById('brokenBody').innerHTML = '<tr><td colspan="4" class="loading">Keine defekten Links gefunden</td></tr>';
                 }
@@ -539,6 +690,10 @@
                     `;
 
                     // SEO Issues
+                    if ($.fn.DataTable.isDataTable('#seoTable')) {
+                        $('#seoTable').DataTable().destroy();
+                    }
+
                     if (seoData.issues.length > 0) {
                         document.getElementById('seoIssuesBody').innerHTML = seoData.issues.map(item => `
                             <tr>
@@ -548,6 +703,23 @@
                                 <td><span class="nofollow">${item.issues.join(', ')}</span></td>
                             </tr>
                         `).join('');
+
+                        $('#seoTable').DataTable({
+                            pageLength: 25,
+                            language: {
+                                search: 'Suchen:',
+                                lengthMenu: 'Zeige _MENU_ Einträge',
+                                info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                                infoEmpty: 'Keine Einträge verfügbar',
+                                infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                                paginate: {
+                                    first: 'Erste',
+                                    last: 'Letzte',
+                                    next: 'Nächste',
+                                    previous: 'Vorherige'
+                                }
+                            }
+                        });
                     } else {
                         document.getElementById('seoIssuesBody').innerHTML = '<tr><td colspan="4" class="loading">Keine SEO-Probleme gefunden</td></tr>';
                     }
@@ -598,6 +770,10 @@
                     `;
 
                     // Redirect Table
+                    if ($.fn.DataTable.isDataTable('#redirectsTable')) {
+                        $('#redirectsTable').DataTable().destroy();
+                    }
+
                     if (redirectsData.redirects.length > 0) {
                         document.getElementById('redirectsBody').innerHTML = redirectsData.redirects.map(redirect => {
                             const isExcessive = redirect.redirect_count > stats.threshold;
@@ -614,6 +790,23 @@
                                 </tr>
                             `;
                         }).join('');
+
+                        $('#redirectsTable').DataTable({
+                            pageLength: 25,
+                            language: {
+                                search: 'Suchen:',
+                                lengthMenu: 'Zeige _MENU_ Einträge',
+                                info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                                infoEmpty: 'Keine Einträge verfügbar',
+                                infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                                paginate: {
+                                    first: 'Erste',
+                                    last: 'Letzte',
+                                    next: 'Nächste',
+                                    previous: 'Vorherige'
+                                }
+                            }
+                        });
                     } else {
                         document.getElementById('redirectsBody').innerHTML = '<tr><td colspan="5" class="loading">Keine Redirects gefunden</td></tr>';
                     }
