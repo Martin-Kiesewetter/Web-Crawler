@@ -43,14 +43,23 @@ docker-compose up -d --build
 ```
 .
 ├── docker-compose.yml      # Docker Compose Konfiguration
-├── Dockerfile             # PHP Container Image
-├── start.sh               # Container Start-Script
-├── init.sql               # Datenbank Initialisierung
-├── config/
-│   └── nginx/
-│       └── default.conf   # Nginx Konfiguration
-└── src/
-    └── index.php          # Hauptanwendung
+├── Dockerfile              # PHP Container Image
+├── docker/                 # Docker-spezifische Dateien
+│   ├── config/
+│   │   └── nginx/
+│   │       └── default.conf   # Nginx Konfiguration
+│   ├── init.sql            # Datenbank Initialisierung
+│   └── start.sh            # Container Start-Script (unused)
+├── src/                    # Anwendungscode
+│   ├── api.php
+│   ├── index.php
+│   ├── classes/
+│   └── crawler-worker.php
+├── tests/                  # Test Suite
+│   ├── Unit/
+│   └── Integration/
+├── phpstan.neon            # PHPStan Konfiguration
+└── phpcs.xml               # PHPCS Konfiguration
 ```
 
 ## Entwicklung
