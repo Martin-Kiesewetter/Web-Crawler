@@ -33,6 +33,10 @@ class Crawler
         $this->client = new Client([
             'timeout' => 30,
             'verify' => false,
+            'allow_redirects' => [
+                'max' => 10,
+                'track_redirects' => true
+            ],
             'headers' => [
                 'User-Agent' => 'WebCrawler/1.0'
             ]
@@ -144,6 +148,17 @@ class Crawler
         $contentType = $response->getHeaderLine('Content-Type');
         $body = $response->getBody()->getContents();
 
+        // Track redirects
+        $redirectUrl = null;
+        $redirectCount = 0;
+        if ($response->hasHeader('X-Guzzle-Redirect-History')) {
+            $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
+            $redirectCount = count($redirectHistory);
+            if ($redirectCount > 0) {
+                $redirectUrl = end($redirectHistory);
+            }
+        }
+
         // Save page
         $domCrawler = new DomCrawler($body, $url);
         $title = $domCrawler->filter('title')->count() > 0
@@ -155,13 +170,24 @@ class Crawler
             : '';
 
         $stmt = $this->db->prepare(
-            "INSERT INTO pages (crawl_job_id, url, title, meta_description, status_code, content_type) " .
-            "VALUES (?, ?, ?, ?, ?, ?) " .
+            "INSERT INTO pages (crawl_job_id, url, title, meta_description, status_code, " .
+            "content_type, redirect_url, redirect_count) " .
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " .
             "ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), status_code = VALUES(status_code), " .
-            "meta_description = VALUES(meta_description)"
+            "meta_description = VALUES(meta_description), redirect_url = VALUES(redirect_url), " .
+            "redirect_count = VALUES(redirect_count)"
         );
 
-        $stmt->execute([$this->crawlJobId, $url, $title, $metaDescription, $statusCode, $contentType]);
+        $stmt->execute([
+            $this->crawlJobId,
+            $url,
+            $title,
+            $metaDescription,
+            $statusCode,
+            $contentType,
+            $redirectUrl,
+            $redirectCount
+        ]);
         $pageId = $this->db->lastInsertId();
 
         // If pageId is 0, fetch it manually

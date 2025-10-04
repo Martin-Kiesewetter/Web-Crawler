@@ -251,6 +251,7 @@
                     <button class="tab active" onclick="switchTab('pages')">Seiten</button>
                     <button class="tab" onclick="switchTab('links')">Links</button>
                     <button class="tab" onclick="switchTab('broken')">Broken Links</button>
+                    <button class="tab" onclick="switchTab('redirects')">Redirects</button>
                     <button class="tab" onclick="switchTab('seo')">SEO Analysis</button>
                 </div>
 
@@ -299,6 +300,25 @@
                         </thead>
                         <tbody id="brokenBody">
                             <tr><td colspan="4" class="loading">Keine defekten Links gefunden</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="redirects-tab">
+                    <h3>Redirect Statistics</h3>
+                    <div id="redirectStats" class="stats" style="margin-bottom: 20px;"></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Redirect To</th>
+                                <th>Status Code</th>
+                                <th>Redirect Count</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="redirectsBody">
+                            <tr><td colspan="5" class="loading">Keine Redirects gefunden</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -546,6 +566,56 @@
                         `).join('');
                     } else {
                         document.getElementById('seoDuplicatesBody').innerHTML = '<p>Keine doppelten Inhalte gefunden</p>';
+                    }
+                }
+
+                // Load redirects
+                const redirectsResponse = await fetch(`/api.php?action=redirects&job_id=${currentJobId}`);
+                const redirectsData = await redirectsResponse.json();
+
+                if (redirectsData.success) {
+                    const stats = redirectsData.stats;
+
+                    // Redirect Stats
+                    document.getElementById('redirectStats').innerHTML = `
+                        <div class="stat-box">
+                            <div class="stat-label">Total Redirects</div>
+                            <div class="stat-value">${stats.total}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Permanent (301/308)</div>
+                            <div class="stat-value">${stats.permanent}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Temporary (302/303/307)</div>
+                            <div class="stat-value">${stats.temporary}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Excessive (>${stats.threshold})</div>
+                            <div class="stat-value" style="color: ${stats.excessive > 0 ? '#e74c3c' : '#27ae60'}">${stats.excessive}</div>
+                            <div class="stat-sublabel">threshold: ${stats.threshold}</div>
+                        </div>
+                    `;
+
+                    // Redirect Table
+                    if (redirectsData.redirects.length > 0) {
+                        document.getElementById('redirectsBody').innerHTML = redirectsData.redirects.map(redirect => {
+                            const isExcessive = redirect.redirect_count > stats.threshold;
+                            const isPermRedirect = redirect.status_code == 301 || redirect.status_code == 308;
+                            const redirectType = isPermRedirect ? 'Permanent' : 'Temporary';
+
+                            return `
+                                <tr style="${isExcessive ? 'background-color: #fff3cd;' : ''}">
+                                    <td class="url-cell" title="${redirect.url}">${redirect.url}</td>
+                                    <td class="url-cell" title="${redirect.redirect_url || '-'}">${redirect.redirect_url || '-'}</td>
+                                    <td><span class="status ${isPermRedirect ? 'completed' : 'running'}">${redirect.status_code}</span></td>
+                                    <td><strong ${isExcessive ? 'style="color: #e74c3c;"' : ''}>${redirect.redirect_count}</strong></td>
+                                    <td>${redirectType}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        document.getElementById('redirectsBody').innerHTML = '<tr><td colspan="5" class="loading">Keine Redirects gefunden</td></tr>';
                     }
                 }
 

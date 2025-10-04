@@ -31,11 +31,14 @@ CREATE TABLE IF NOT EXISTS pages (
     meta_description TEXT,
     status_code INT,
     content_type VARCHAR(100),
+    redirect_url VARCHAR(2048),
+    redirect_count INT DEFAULT 0,
     crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
     INDEX idx_crawl_job (crawl_job_id),
     INDEX idx_url (url(255)),
     INDEX idx_status_code (status_code),
+    INDEX idx_redirect_count (redirect_count),
     UNIQUE KEY unique_job_url (crawl_job_id, url(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

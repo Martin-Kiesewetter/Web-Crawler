@@ -217,6 +217,47 @@ try {
             ]);
             break;
 
+        case 'redirects':
+            $jobId = $_GET['job_id'] ?? 0;
+            $stmt = $db->prepare(
+                "SELECT url, title, status_code, redirect_url, redirect_count FROM pages " .
+                "WHERE crawl_job_id = ? AND redirect_count > 0 " .
+                "ORDER BY redirect_count DESC, url"
+            );
+            $stmt->execute([$jobId]);
+            $redirects = $stmt->fetchAll();
+
+            // Count redirect types
+            $permanent = 0;
+            $temporary = 0;
+            $excessive = 0;
+            $maxThreshold = 3; // From Config::MAX_REDIRECT_THRESHOLD
+
+            foreach ($redirects as $redirect) {
+                $code = $redirect['status_code'];
+                if ($code == 301 || $code == 308) {
+                    $permanent++;
+                } elseif ($code == 302 || $code == 303 || $code == 307) {
+                    $temporary++;
+                }
+                if ($redirect['redirect_count'] > $maxThreshold) {
+                    $excessive++;
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'redirects' => $redirects,
+                'stats' => [
+                    'total' => count($redirects),
+                    'permanent' => $permanent,
+                    'temporary' => $temporary,
+                    'excessive' => $excessive,
+                    'threshold' => $maxThreshold
+                ]
+            ]);
+            break;
+
         case 'delete':
             $jobId = $_POST['job_id'] ?? 0;
             $stmt = $db->prepare("DELETE FROM crawl_jobs WHERE id = ?");
