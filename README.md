@@ -44,12 +44,12 @@ docker-compose up -d --build
 .
 ├── docker-compose.yml      # Docker Compose Konfiguration
 ├── Dockerfile              # PHP Container Image
-├── docker/                 # Docker-spezifische Dateien
-│   ├── config/
-│   │   └── nginx/
-│   │       └── default.conf   # Nginx Konfiguration
-│   ├── init.sql            # Datenbank Initialisierung
-│   └── start.sh            # Container Start-Script (unused)
+├── config/                 # Konfigurationsdateien
+│   ├── docker/
+│   │   ├── init.sql        # Datenbank Initialisierung
+│   │   └── start.sh        # Container Start-Script (unused)
+│   └── nginx/
+│       └── default.conf    # Nginx Konfiguration
 ├── src/                    # Anwendungscode
 │   ├── api.php
 │   ├── index.php
