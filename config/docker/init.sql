@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS crawl_jobs (
     status ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending',
     total_pages INT DEFAULT 0,
     total_links INT DEFAULT 0,
+    total_images INT DEFAULT 0,
+    total_scripts INT DEFAULT 0,
     started_at TIMESTAMP NULL,
     completed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS pages (
     content_type VARCHAR(100),
     redirect_url VARCHAR(2048),
     redirect_count INT DEFAULT 0,
+    favicon_url VARCHAR(2048),
     crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
     INDEX idx_crawl_job (crawl_job_id),
@@ -76,4 +79,52 @@ CREATE TABLE IF NOT EXISTS crawl_queue (
     INDEX idx_status (status),
     INDEX idx_crawl_job (crawl_job_id),
     UNIQUE KEY unique_job_url (crawl_job_id, url(255))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Images Table for storing extracted image data
+CREATE TABLE IF NOT EXISTS images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    crawl_job_id INT NOT NULL,
+    page_id INT,
+    url VARCHAR(2048) NOT NULL,
+    alt_text TEXT,
+    title VARCHAR(500),
+    status_code INT,
+    content_type VARCHAR(100),
+    file_size INT,
+    width INT,
+    height INT,
+    is_responsive BOOLEAN DEFAULT FALSE,
+    redirect_url VARCHAR(2048),
+    redirect_count INT DEFAULT 0,
+    crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL,
+    INDEX idx_crawl_job (crawl_job_id),
+    INDEX idx_page (page_id),
+    INDEX idx_url (url(255)),
+    INDEX idx_status_code (status_code),
+    INDEX idx_responsive (is_responsive),
+    UNIQUE KEY unique_job_url (crawl_job_id, url(255))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Scripts Table for storing extracted scripts
+CREATE TABLE IF NOT EXISTS scripts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    crawl_job_id INT NOT NULL,
+    page_id INT,
+    url VARCHAR(2048),
+    type ENUM('inline', 'external') DEFAULT 'external',
+    content_hash VARCHAR(64),
+    status_code INT,
+    content_type VARCHAR(100),
+    file_size INT,
+    crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL,
+    INDEX idx_crawl_job (crawl_job_id),
+    INDEX idx_page (page_id),
+    INDEX idx_type (type),
+    INDEX idx_url (url(255)),
+    UNIQUE KEY unique_external_script (crawl_job_id, page_id, url(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

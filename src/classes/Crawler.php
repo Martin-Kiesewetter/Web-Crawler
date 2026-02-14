@@ -209,6 +209,14 @@ class Crawler
         if (str_contains($contentType, 'text/html') && $pageId > 0) {
             echo "Extracting links from: $url (pageId: $pageId)\n";
             $this->extractLinks($domCrawler, $url, $pageId, $depth);
+            
+            // Extract and save images
+            echo "Extracting images from: $url (pageId: $pageId)\n";
+            $this->extractImages($domCrawler, $url, $pageId);
+            
+            // Extract and save scripts
+            echo "Extracting scripts from: $url (pageId: $pageId)\n";
+            $this->extractScripts($domCrawler, $url, $pageId);
         } else {
             echo "Skipping link extraction - content type: $contentType\n";
         }
@@ -272,6 +280,252 @@ class Crawler
         echo "Processed $linkCount links from $sourceUrl\n";
     }
 
+    /**
+     * Extract images from HTML page and save to database
+     */
+    private function extractImages(DomCrawler $crawler, string $pageUrl, int $pageId): void
+    {
+        $imageCount = 0;
+        $crawler->filter('img')->each(function (DomCrawler $node) use ($pageUrl, $pageId, &$imageCount) {
+            try {
+                $imageCount++;
+                $src = $node->attr('src');
+                if (!$src) {
+                    return;
+                }
+
+                // Convert relative URLs to absolute
+                $imageUrl = $this->makeAbsoluteUrl($src, $pageUrl);
+
+                // Get image attributes
+                $alt = $node->attr('alt') ?? '';
+                $title = $node->attr('title') ?? '';
+                $srcset = $node->attr('srcset') ?? '';
+
+                // Check if responsive (has srcset or sizes attribute)
+                $isResponsive = !empty($srcset) || !empty($node->attr('sizes'));
+
+                // Try to fetch image metadata
+                $imageData = $this->getImageData($imageUrl);
+
+                // Save image
+                $stmt = $this->db->prepare(
+                    "INSERT INTO images (crawl_job_id, page_id, url, alt_text, title, " .
+                    "status_code, content_type, file_size, width, height, is_responsive, " .
+                    "redirect_url, redirect_count) " .
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " .
+                    "ON DUPLICATE KEY UPDATE status_code = VALUES(status_code), " .
+                    "content_type = VALUES(content_type), file_size = VALUES(file_size), " .
+                    "width = VALUES(width), height = VALUES(height)"
+                );
+                $stmt->execute([
+                    $this->crawlJobId,
+                    $pageId,
+                    $imageUrl,
+                    $alt,
+                    $title,
+                    $imageData['status_code'] ?? null,
+                    $imageData['content_type'] ?? null,
+                    $imageData['file_size'] ?? null,
+                    $imageData['width'] ?? null,
+                    $imageData['height'] ?? null,
+                    $isResponsive ? 1 : 0,
+                    $imageData['redirect_url'] ?? null,
+                    $imageData['redirect_count'] ?? 0
+                ]);
+            } catch (\Exception $e) {
+                echo "Error processing image: " . $e->getMessage() . "\n";
+            }
+        });
+        echo "Processed $imageCount images from $pageUrl\n";
+    }
+
+    /**
+     * Fetch image metadata (size, status code, etc.)
+     */
+    private function getImageData(string $imageUrl): array
+    {
+        $data = [
+            'status_code' => null,
+            'content_type' => null,
+            'file_size' => null,
+            'width' => null,
+            'height' => null,
+            'redirect_url' => null,
+            'redirect_count' => 0
+        ];
+
+        try {
+            $response = $this->client->head($imageUrl, ['allow_redirects' => true]);
+            
+            $data['status_code'] = $response->getStatusCode();
+            $data['content_type'] = $response->getHeaderLine('Content-Type');
+            
+            // Get file size from Content-Length header
+            $contentLength = $response->getHeaderLine('Content-Length');
+            if ($contentLength) {
+                $data['file_size'] = (int)$contentLength;
+            }
+
+            // Track redirects
+            if ($response->hasHeader('X-Guzzle-Redirect-History')) {
+                $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
+                $data['redirect_count'] = count($redirectHistory);
+                if ($data['redirect_count'] > 0) {
+                    $data['redirect_url'] = end($redirectHistory);
+                }
+            }
+
+            // Try to get image dimensions for common formats
+            if (str_contains($data['content_type'] ?? '', 'image/')) {
+                $dimensions = $this->getImageDimensions($imageUrl);
+                if ($dimensions) {
+                    $data['width'] = $dimensions['width'];
+                    $data['height'] = $dimensions['height'];
+                }
+            }
+        } catch (\Exception $e) {
+            // If we can't fetch image metadata, just continue with null values
+            echo "Could not fetch image data for $imageUrl: " . $e->getMessage() . "\n";
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get image dimensions without downloading entire file
+     */
+    private function getImageDimensions(string $imageUrl): ?array
+    {
+        try {
+            // Use getimagesizefromstring with a HEAD request and partial content
+            $response = $this->client->get($imageUrl, [
+                'headers' => ['Range' => 'bytes=0-32768'],  // Get first 32KB
+                'allow_redirects' => true
+            ]);
+            
+            $imageData = $response->getBody()->getContents();
+            $dimensions = getimagesizefromstring($imageData);
+            
+            if ($dimensions !== false) {
+                return [
+                    'width' => $dimensions[0],
+                    'height' => $dimensions[1]
+                ];
+            }
+        } catch (\Exception $e) {
+            // Can't determine dimensions
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract scripts from HTML page and save to database
+     */
+    private function extractScripts(DomCrawler $crawler, string $pageUrl, int $pageId): void
+    {
+        $scriptCount = 0;
+        
+        // Extract external scripts (<script src="...">)
+        $crawler->filter('script[src]')->each(function (DomCrawler $node) use ($pageUrl, $pageId, &$scriptCount) {
+            try {
+                $scriptCount++;
+                $src = $node->attr('src');
+                if (!$src) {
+                    return;
+                }
+
+                // Convert relative URLs to absolute
+                $scriptUrl = $this->makeAbsoluteUrl($src, $pageUrl);
+
+                // Check if it's an external script (external domain)
+                $scriptHost = parse_url($scriptUrl, PHP_URL_HOST);
+                $isExternal = strtolower($scriptHost ?: '') !== $this->baseDomain;
+
+                // Fetch script metadata
+                $scriptData = $this->getScriptData($scriptUrl);
+
+                // Save external script
+                $stmt = $this->db->prepare(
+                    "INSERT INTO scripts (crawl_job_id, page_id, url, type, status_code, content_type, file_size) " .
+                    "VALUES (?, ?, ?, 'external', ?, ?, ?) " .
+                    "ON DUPLICATE KEY UPDATE status_code = VALUES(status_code), content_type = VALUES(content_type), file_size = VALUES(file_size)"
+                );
+                $stmt->execute([
+                    $this->crawlJobId,
+                    $pageId,
+                    $scriptUrl,
+                    $scriptData['status_code'],
+                    $scriptData['content_type'],
+                    $scriptData['file_size']
+                ]);
+            } catch (\Exception $e) {
+                echo "Error processing script: " . $e->getMessage() . "\n";
+            }
+        });
+
+        // Extract inline scripts (<script>...</script>)
+        $inlineCount = 0;
+        $crawler->filter('script:not([src])')->each(function (DomCrawler $node) use ($pageUrl, $pageId, &$inlineCount) {
+            try {
+                $inlineCount++;
+                $content = $node->text();
+                if (!$content || trim($content) === '') {
+                    return;
+                }
+
+                // Calculate hash of inline script content
+                $contentHash = hash('sha256', $content);
+
+                // Save inline script
+                $stmt = $this->db->prepare(
+                    "INSERT INTO scripts (crawl_job_id, page_id, type, content_hash) " .
+                    "VALUES (?, ?, 'inline', ?)"
+                );
+                $stmt->execute([
+                    $this->crawlJobId,
+                    $pageId,
+                    $contentHash
+                ]);
+            } catch (\Exception $e) {
+                echo "Error processing inline script: " . $e->getMessage() . "\n";
+            }
+        });
+
+        echo "Processed $scriptCount external and $inlineCount inline scripts from $pageUrl\n";
+    }
+
+    /**
+     * Fetch script metadata (status code, content type, file size)
+     */
+    private function getScriptData(string $scriptUrl): array
+    {
+        $data = [
+            'status_code' => null,
+            'content_type' => null,
+            'file_size' => null
+        ];
+
+        try {
+            $response = $this->client->head($scriptUrl, ['allow_redirects' => true]);
+            
+            $data['status_code'] = $response->getStatusCode();
+            $data['content_type'] = $response->getHeaderLine('Content-Type');
+            
+            // Get file size from Content-Length header
+            $contentLength = $response->getHeaderLine('Content-Length');
+            if ($contentLength) {
+                $data['file_size'] = (int)$contentLength;
+            }
+        } catch (\Exception $e) {
+            // Script not accessible or error occurred
+            $data['status_code'] = 0;
+        }
+
+        return $data;
+    }
+
     private function makeAbsoluteUrl(string $url, string $base): string
     {
         if (filter_var($url, FILTER_VALIDATE_URL)) {
@@ -308,10 +562,12 @@ class Crawler
         $stmt = $this->db->prepare(
             "UPDATE crawl_jobs SET
             total_pages = (SELECT COUNT(*) FROM pages WHERE crawl_job_id = ?),
-            total_links = (SELECT COUNT(*) FROM links WHERE crawl_job_id = ?)
+            total_links = (SELECT COUNT(*) FROM links WHERE crawl_job_id = ?),
+            total_images = (SELECT COUNT(*) FROM images WHERE crawl_job_id = ?),
+            total_scripts = (SELECT COUNT(*) FROM scripts WHERE crawl_job_id = ?)
             WHERE id = ?"
         );
-        $stmt->execute([$this->crawlJobId, $this->crawlJobId, $this->crawlJobId]);
+        $stmt->execute([$this->crawlJobId, $this->crawlJobId, $this->crawlJobId, $this->crawlJobId, $this->crawlJobId]);
     }
 
     private function normalizeUrl(string $url): string

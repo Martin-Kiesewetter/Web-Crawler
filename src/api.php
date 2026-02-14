@@ -164,6 +164,85 @@ try {
             ]);
             break;
 
+        case 'images':
+            $jobId = $_GET['job_id'] ?? 0;
+            $filter = $_GET['filter'] ?? 'all';
+            
+            $query = "SELECT * FROM images WHERE crawl_job_id = ?";
+            
+            // Apply filters
+            if ($filter === 'broken') {
+                $query .= " AND (status_code IS NULL OR status_code >= 400)";
+            } elseif ($filter === 'responsive') {
+                $query .= " AND is_responsive = 1";
+            } elseif ($filter === 'non-responsive') {
+                $query .= " AND is_responsive = 0";
+            } elseif ($filter === 'no-alt') {
+                $query .= " AND (alt_text IS NULL OR alt_text = '')";
+            } elseif ($filter === 'with-redirects') {
+                $query .= " AND redirect_count > 0";
+            }
+            
+            $query .= " ORDER BY id DESC LIMIT 2000";
+            
+            $stmt = $db->prepare($query);
+            $stmt->execute([$jobId]);
+            $images = $stmt->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'images' => $images,
+                'filter' => $filter
+            ]);
+            break;
+
+        case 'assets':
+            $jobId = $_GET['job_id'] ?? 0;
+            $type = $_GET['type'] ?? 'all'; // all, page, image, script
+            
+            $assets = [];
+            
+            // Fetch pages
+            if ($type === 'all' || $type === 'page') {
+                $stmt = $db->prepare(
+                    "SELECT id, crawl_job_id, url, title, status_code, crawled_at, 'page' as asset_type FROM pages " .
+                    "WHERE crawl_job_id = ? ORDER BY id DESC"
+                );
+                $stmt->execute([$jobId]);
+                $pages = $stmt->fetchAll();
+                $assets = array_merge($assets, $pages);
+            }
+            
+            // Fetch images
+            if ($type === 'all' || $type === 'image') {
+                $stmt = $db->prepare(
+                    "SELECT id, crawl_job_id, url, alt_text as title, status_code, crawled_at, 'image' as asset_type FROM images " .
+                    "WHERE crawl_job_id = ? ORDER BY id DESC"
+                );
+                $stmt->execute([$jobId]);
+                $images = $stmt->fetchAll();
+                $assets = array_merge($assets, $images);
+            }
+            
+            // Fetch scripts
+            if ($type === 'all' || $type === 'script') {
+                $stmt = $db->prepare(
+                    "SELECT id, crawl_job_id, url, type as title, status_code, crawled_at, 'script' as asset_type FROM scripts " .
+                    "WHERE crawl_job_id = ? ORDER BY id DESC"
+                );
+                $stmt->execute([$jobId]);
+                $scripts = $stmt->fetchAll();
+                $assets = array_merge($assets, $scripts);
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'assets' => $assets,
+                'type_filter' => $type,
+                'total' => count($assets)
+            ]);
+            break;
+
         case 'broken-links':
             $jobId = $_GET['job_id'] ?? 0;
             $stmt = $db->prepare(

@@ -352,17 +352,27 @@
                 </div>
 
                 <div class="tab-content active" id="pages-tab">
-                    <table id="pagesTable" class="display">
+                    <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                        <label for="assetTypeFilter" style="font-weight: bold; color: #2c3e50;">Inhaltstyp:</label>
+                        <select id="assetTypeFilter" onchange="loadAssetsTable(this.value)" style="padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                            <option value="all">Alle Assets</option>
+                            <option value="page">Seiten</option>
+                            <option value="image">Bilder</option>
+                            <option value="script">Scripts</option>
+                        </select>
+                    </div>
+                    <table id="assetsTable" class="display">
                         <thead>
                             <tr>
+                                <th>Typ</th>
                                 <th>URL</th>
                                 <th>Titel</th>
                                 <th>Status</th>
                                 <th>Gecrawlt</th>
                             </tr>
                         </thead>
-                        <tbody id="pagesBody">
-                            <tr><td colspan="4" class="loading">Keine Seiten gefunden</td></tr>
+                        <tbody id="assetsBody">
+                            <tr><td colspan="5" class="loading">Keine Assets gefunden</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -643,40 +653,9 @@
                     }
                 }
 
-                // Load pages
-                const pagesResponse = await fetch(`/api.php?action=pages&job_id=${currentJobId}`);
-                const pagesData = await pagesResponse.json();
-
-                if ($.fn.DataTable.isDataTable('#pagesTable')) {
-                    $('#pagesTable').DataTable().destroy();
-                }
-
-                if (pagesData.success && pagesData.pages.length > 0) {
-                    document.getElementById('pagesBody').innerHTML = pagesData.pages.map(page => `
-                        <tr>
-                            <td class="url-cell" title="${page.url}">${page.url}</td>
-                            <td>${page.title || '-'}</td>
-                            <td>${page.status_code}</td>
-                            <td>${page.crawled_at}</td>
-                        </tr>
-                    `).join('');
-
-                    $('#pagesTable').DataTable({
-                        pageLength: 50,
-                        language: {
-                            search: 'Suchen:',
-                            lengthMenu: 'Zeige _MENU_ Einträge',
-                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
-                            infoEmpty: 'Keine Einträge verfügbar',
-                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
-                            paginate: {
-                                first: 'Erste',
-                                last: 'Letzte',
-                                next: 'Nächste',
-                                previous: 'Vorherige'
-                            }
-                        }
-                    });
+                // Load assets (replaces old pages loading)
+                if (currentJobId) {
+                    loadAssetsTable('all');
                 }
 
                 // Load links
@@ -961,6 +940,87 @@
 
             event.target.classList.add('active');
             document.getElementById(tab + '-tab').classList.add('active');
+            
+            // Load assets if switching to assets tab
+            if (tab === 'assets') {
+                loadAssetsTable('all');
+            }
+        }
+
+        async function loadAssetsTable(type = 'all') {
+            if (!currentJobId) return;
+
+            try {
+                const assetsResponse = await fetch(`/api.php?action=assets&job_id=${currentJobId}&type=${type}`);
+                const assetsData = await assetsResponse.json();
+
+                if ($.fn.DataTable.isDataTable('#assetsTable')) {
+                    $('#assetsTable').DataTable().destroy();
+                }
+
+                if (assetsData.success && assetsData.assets.length > 0) {
+                    document.getElementById('assetsBody').innerHTML = assetsData.assets.map(asset => {
+                        let typeLabel = asset.asset_type;
+                        let typeColor = '#7f8c8d';
+                        
+                        if (typeLabel === 'page') {
+                            typeLabel = 'Seite';
+                            typeColor = '#3498db';
+                        } else if (typeLabel === 'image') {
+                            typeLabel = 'Bild';
+                            typeColor = '#2ecc71';
+                        } else if (typeLabel === 'script') {
+                            typeLabel = 'Script';
+                            typeColor = '#e74c3c';
+                        }
+                        
+                        return `
+                            <tr>
+                                <td><span style="background: ${typeColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">${typeLabel}</span></td>
+                                <td class="url-cell" title="${asset.url}">${asset.url}</td>
+                                <td>${asset.title || '-'}</td>
+                                <td><span class="status ${asset.status_code >= 400 ? 'failed' : 'completed'}">${asset.status_code || 'N/A'}</span></td>
+                                <td>${asset.crawled_at}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    $('#assetsTable').DataTable({
+                        pageLength: 50,
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('assetsBody').innerHTML = '<tr><td colspan="5" class="loading">Keine Assets gefunden</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading assets:', error);
+                document.getElementById('assetsBody').innerHTML = '<tr><td colspan="5" class="loading">Fehler beim Laden</td></tr>';
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+            
+            // Load assets if switching to pages tab (which now shows assets)
+            if (tab === 'pages') {
+                loadAssetsTable('all');
+            }
         }
 
         // Initial load
