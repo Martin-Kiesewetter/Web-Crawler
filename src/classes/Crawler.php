@@ -240,6 +240,11 @@ class Crawler
                 // Convert relative URLs to absolute
                 $targetUrl = $this->makeAbsoluteUrl($href, $sourceUrl);
 
+                // Skip if URL points to an image or script file
+                if ($this->isImageUrl($targetUrl) || $this->isScriptUrl($targetUrl)) {
+                    return;
+                }
+
                 // Get link text
                 $linkText = trim($node->text());
 
@@ -297,6 +302,19 @@ class Crawler
                 // Convert relative URLs to absolute
                 $imageUrl = $this->makeAbsoluteUrl($src, $pageUrl);
 
+                // Check if this image URL was already crawled for this job
+                $stmt = $this->db->prepare(
+                    "SELECT id FROM images WHERE crawl_job_id = ? AND url = ? LIMIT 1"
+                );
+                $stmt->execute([$this->crawlJobId, $imageUrl]);
+                $existingImage = $stmt->fetch();
+
+                // If image already exists, skip fetching metadata
+                if ($existingImage) {
+                    echo "Skipping already crawled image: $imageUrl\n";
+                    return;
+                }
+
                 // Get image attributes
                 $alt = $node->attr('alt') ?? '';
                 $title = $node->attr('title') ?? '';
@@ -305,7 +323,7 @@ class Crawler
                 // Check if responsive (has srcset or sizes attribute)
                 $isResponsive = !empty($srcset) || !empty($node->attr('sizes'));
 
-                // Try to fetch image metadata
+                // Fetch image metadata (only for new images)
                 $imageData = $this->getImageData($imageUrl);
 
                 // Save image
@@ -439,7 +457,20 @@ class Crawler
                 // Convert relative URLs to absolute
                 $scriptUrl = $this->makeAbsoluteUrl($src, $pageUrl);
 
-                // Fetch script metadata
+                // Check if this script URL was already crawled for this job
+                $stmt = $this->db->prepare(
+                    "SELECT id FROM scripts WHERE crawl_job_id = ? AND url = ? LIMIT 1"
+                );
+                $stmt->execute([$this->crawlJobId, $scriptUrl]);
+                $existingScript = $stmt->fetch();
+
+                // If script already exists, skip fetching metadata
+                if ($existingScript) {
+                    echo "Skipping already crawled script: $scriptUrl\n";
+                    return;
+                }
+
+                // Fetch script metadata (only for new scripts)
                 $scriptData = $this->getScriptData($scriptUrl);
 
                 // Save external script with full metadata
@@ -562,6 +593,38 @@ class Crawler
             WHERE id = ?"
         );
         $stmt->execute([$this->crawlJobId, $this->crawlJobId, $this->crawlJobId, $this->crawlJobId, $this->crawlJobId]);
+    }
+
+    /**
+     * Check if URL points to an image file
+     */
+    private function isImageUrl(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!$path) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'tif', 'avif'];
+        
+        return in_array($extension, $imageExtensions);
+    }
+
+    /**
+     * Check if URL points to a JavaScript file
+     */
+    private function isScriptUrl(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!$path) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $scriptExtensions = ['js', 'mjs', 'jsx'];
+        
+        return in_array($extension, $scriptExtensions);
     }
 
     private function normalizeUrl(string $url): string
