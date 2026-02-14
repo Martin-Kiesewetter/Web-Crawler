@@ -421,7 +421,7 @@ class Crawler
     }
 
     /**
-     * Extract scripts from HTML page and save to database
+     * Extract external and internal JavaScript files from HTML page and save to database
      */
     private function extractScripts(DomCrawler $crawler, string $pageUrl, int $pageId): void
     {
@@ -464,37 +464,7 @@ class Crawler
             }
         });
 
-        // Extract inline scripts (<script>...</script>)
-        $inlineCount = 0;
-        $crawler->filter('script:not([src])')->each(function (DomCrawler $node) use ($pageUrl, $pageId, &$inlineCount) {
-            try {
-                $inlineCount++;
-                $content = $node->text();
-                if (!$content || trim($content) === '') {
-                    return;
-                }
-
-                // Calculate hash of inline script content
-                $contentHash = hash('sha256', $content);
-                $contentSize = strlen($content);
-
-                // Save inline script with content hash and size
-                $stmt = $this->db->prepare(
-                    "INSERT INTO scripts (crawl_job_id, page_id, type, content_hash, file_size) " .
-                    "VALUES (?, ?, 'inline', ?, ?)"
-                );
-                $stmt->execute([
-                    $this->crawlJobId,
-                    $pageId,
-                    $contentHash,
-                    $contentSize
-                ]);
-            } catch (\Exception $e) {
-                echo "Error processing inline script: " . $e->getMessage() . "\n";
-            }
-        });
-
-        echo "Processed $scriptCount external and $inlineCount inline scripts from $pageUrl\n";
+        echo "Processed $scriptCount external JavaScript files from $pageUrl\n";
     }
 
     /**

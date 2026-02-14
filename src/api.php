@@ -387,12 +387,29 @@ try {
 
         case 'delete':
             $jobId = $_POST['job_id'] ?? 0;
+            
+            // Delete all related data before deleting the job
+            $stmt = $db->prepare("DELETE FROM crawl_queue WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM links WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM images WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM scripts WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM pages WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
             $stmt = $db->prepare("DELETE FROM crawl_jobs WHERE id = ?");
             $stmt->execute([$jobId]);
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Job deleted'
+                'message' => 'Job and all related data deleted'
             ]);
             break;
 
@@ -411,12 +428,18 @@ try {
             $stmt = $db->prepare("DELETE FROM links WHERE crawl_job_id = ?");
             $stmt->execute([$jobId]);
 
+            $stmt = $db->prepare("DELETE FROM images WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
+            $stmt = $db->prepare("DELETE FROM scripts WHERE crawl_job_id = ?");
+            $stmt->execute([$jobId]);
+
             $stmt = $db->prepare("DELETE FROM pages WHERE crawl_job_id = ?");
             $stmt->execute([$jobId]);
 
             // Reset job status
             $stmt = $db->prepare(
-                "UPDATE crawl_jobs SET status = 'pending', total_pages = 0, total_links = 0, " .
+                "UPDATE crawl_jobs SET status = 'pending', total_pages = 0, total_links = 0, total_images = 0, total_scripts = 0, " .
                 "started_at = NULL, completed_at = NULL WHERE id = ?"
             );
             $stmt->execute([$jobId]);

@@ -655,7 +655,8 @@
 
                 // Load assets (replaces old pages loading)
                 if (currentJobId) {
-                    loadAssetsTable('all');
+                    const selectedFilter = document.getElementById('assetTypeFilter')?.value || 'all';
+                    loadAssetsTable(selectedFilter);
                 }
 
                 // Load links
@@ -1019,7 +1020,8 @@
             
             // Load assets if switching to pages tab (which now shows assets)
             if (tab === 'pages') {
-                loadAssetsTable('all');
+                const selectedFilter = document.getElementById('assetTypeFilter')?.value || 'all';
+                loadAssetsTable(selectedFilter);
             }
         }
 
