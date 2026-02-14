@@ -344,6 +344,32 @@ try {
             ]);
             break;
 
+        case 'nofollow-links':
+            $jobId = $_GET['job_id'] ?? 0;
+            $filter = $_GET['filter'] ?? 'all';
+            
+            $query = "SELECT * FROM links WHERE crawl_job_id = ? AND is_nofollow = 1";
+            
+            // Apply filters
+            if ($filter === 'internal') {
+                $query .= " AND is_internal = 1";
+            } elseif ($filter === 'external') {
+                $query .= " AND is_internal = 0";
+            }
+            
+            $query .= " ORDER BY source_url, target_url";
+            
+            $stmt = $db->prepare($query);
+            $stmt->execute([$jobId]);
+            $nofollowLinks = $stmt->fetchAll();
+
+            echo json_encode([
+                'success' => true,
+                'nofollow_links' => $nofollowLinks,
+                'filter' => $filter
+            ]);
+            break;
+
         case 'redirects':
             $jobId = $_GET['job_id'] ?? 0;
             $stmt = $db->prepare(

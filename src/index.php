@@ -446,6 +446,29 @@
                         </tbody>
                     </table>
 
+                    <h3 style="margin-top: 30px;">Nofollow Links</h3>
+                    <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                        <label for="nofollowFilter" style="font-weight: bold; color: #2c3e50;">Filter:</label>
+                        <select id="nofollowFilter" onchange="loadNofollowLinks(this.value)" style="padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                            <option value="all">Alle Nofollow-Links</option>
+                            <option value="internal">Interne Nofollow</option>
+                            <option value="external">Externe Nofollow</option>
+                        </select>
+                    </div>
+                    <table id="nofollowTable" class="display">
+                        <thead>
+                            <tr>
+                                <th>Von</th>
+                                <th>Nach</th>
+                                <th>Link-Text</th>
+                                <th>Typ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nofollowBody">
+                            <tr><td colspan="4" class="loading">Keine Nofollow-Links gefunden</td></tr>
+                        </tbody>
+                    </table>
+
                     <h3 style="margin-top: 30px;">Duplicate Content</h3>
                     <div id="seoDuplicatesBody"></div>
                 </div>
@@ -805,6 +828,9 @@
                     } else {
                         document.getElementById('seoDuplicatesBody').innerHTML = '<p>Keine doppelten Inhalte gefunden</p>';
                     }
+                    
+                    // Load nofollow links
+                    loadNofollowLinks('all');
                 }
 
                 // Load redirects
@@ -945,6 +971,52 @@
             // Load assets if switching to assets tab
             if (tab === 'assets') {
                 loadAssetsTable('all');
+            }
+        }
+
+        async function loadNofollowLinks(filter = 'all') {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api.php?action=nofollow-links&job_id=${currentJobId}&filter=${filter}`);
+                const data = await response.json();
+
+                if ($.fn.DataTable.isDataTable('#nofollowTable')) {
+                    $('#nofollowTable').DataTable().destroy();
+                }
+
+                if (data.success && data.nofollow_links.length > 0) {
+                    document.getElementById('nofollowBody').innerHTML = data.nofollow_links.map(link => `
+                        <tr>
+                            <td class="url-cell" title="${link.source_url}">${link.source_url}</td>
+                            <td class="url-cell" title="${link.target_url}">${link.target_url}</td>
+                            <td>${link.link_text || '-'}</td>
+                            <td>${link.is_internal ? '<span style="color: #3498db;">Intern</span>' : '<span class="external">Extern</span>'}</td>
+                        </tr>
+                    `).join('');
+
+                    $('#nofollowTable').DataTable({
+                        pageLength: 25,
+                        language: {
+                            search: 'Suchen:',
+                            lengthMenu: 'Zeige _MENU_ Einträge',
+                            info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                            infoEmpty: 'Keine Einträge verfügbar',
+                            infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                            paginate: {
+                                first: 'Erste',
+                                last: 'Letzte',
+                                next: 'Nächste',
+                                previous: 'Vorherige'
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('nofollowBody').innerHTML = '<tr><td colspan="4" class="loading">Keine Nofollow-Links gefunden</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading nofollow links:', error);
+                document.getElementById('nofollowBody').innerHTML = '<tr><td colspan="4" class="loading">Fehler beim Laden</td></tr>';
             }
         }
 

@@ -272,8 +272,8 @@ class Crawler
                     $isInternal ? 1 : 0
                 ]);
 
-                // Add to queue if internal and not nofollow
-                if ($isInternal && !$isNofollow && $depth < 50) {
+                // Add to queue if internal (including nofollow links for crawling)
+                if ($isInternal && $depth < 50) {
                     // Normalize URL (remove fragment, trailing slash)
                     $normalizedUrl = $this->normalizeUrl($targetUrl);
                     $this->addToQueue($normalizedUrl, $depth + 1);
