@@ -1,4 +1,4 @@
-# Web Crawler - Screaming Frog Alternative
+# Web Crawler - Freies Analysetool
 
 Eine leistungsstarke PHP-basierte Web-Crawler-Anwendung mit MariaDB, die in Docker läuft. Der Crawler extrahiert und analysiert Seiten, Links, Bilder und JavaScript-Dateien mit umfangreichen Metadaten.
 
