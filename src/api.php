@@ -126,6 +126,14 @@ try {
             }
             $jobs = $stmt->fetchAll();
 
+            // Add favicon from first page for each job
+            foreach ($jobs as &$job) {
+                $stmt = $db->prepare("SELECT favicon_url FROM pages WHERE crawl_job_id = ? AND favicon_url IS NOT NULL LIMIT 1");
+                $stmt->execute([$job['id']]);
+                $page = $stmt->fetch();
+                $job['favicon_url'] = $page ? $page['favicon_url'] : null;
+            }
+
             echo json_encode([
                 'success' => true,
                 'jobs' => $jobs

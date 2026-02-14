@@ -169,13 +169,16 @@ class Crawler
             ? $domCrawler->filter('meta[name="description"]')->attr('content')
             : '';
 
+        // Extract favicon
+        $faviconUrl = $this->extractFavicon($domCrawler, $url);
+
         $stmt = $this->db->prepare(
             "INSERT INTO pages (crawl_job_id, url, title, meta_description, status_code, " .
-            "content_type, redirect_url, redirect_count) " .
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " .
+            "content_type, redirect_url, redirect_count, favicon_url) " .
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " .
             "ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), status_code = VALUES(status_code), " .
             "meta_description = VALUES(meta_description), redirect_url = VALUES(redirect_url), " .
-            "redirect_count = VALUES(redirect_count)"
+            "redirect_count = VALUES(redirect_count), favicon_url = VALUES(favicon_url)"
         );
 
         $stmt->execute([
@@ -186,7 +189,8 @@ class Crawler
             $statusCode,
             $contentType,
             $redirectUrl,
-            $redirectCount
+            $redirectCount,
+            $faviconUrl
         ]);
         $pageId = $this->db->lastInsertId();
 
@@ -351,5 +355,74 @@ class Crawler
         $query = isset($parts['query']) ? '?' . $parts['query'] : '';
 
         return $scheme . $host . $port . $path . $query;
+    }
+
+    /**
+     * Extract favicon URL from HTML
+     */
+    private function extractFavicon(DomCrawler $domCrawler, string $pageUrl): ?string
+    {
+        // Try different favicon link methods in order of preference
+        $faviconUrls = [];
+
+        // 1. rel="icon" (modern)
+        if ($domCrawler->filter('link[rel="icon"]')->count() > 0) {
+            $href = $domCrawler->filter('link[rel="icon"]')->attr('href');
+            if ($href) {
+                $faviconUrls[] = $href;
+            }
+        }
+
+        // 2. rel="shortcut icon" (legacy)
+        if ($domCrawler->filter('link[rel="shortcut icon"]')->count() > 0) {
+            $href = $domCrawler->filter('link[rel="shortcut icon"]')->attr('href');
+            if ($href) {
+                $faviconUrls[] = $href;
+            }
+        }
+
+        // 3. rel="apple-touch-icon"
+        if ($domCrawler->filter('link[rel="apple-touch-icon"]')->count() > 0) {
+            $href = $domCrawler->filter('link[rel="apple-touch-icon"]')->attr('href');
+            if ($href) {
+                $faviconUrls[] = $href;
+            }
+        }
+
+        // 4. Default favicon
+        $faviconUrls[] = '/favicon.ico';
+
+        // Convert relative URLs to absolute
+        foreach ($faviconUrls as $faviconUrl) {
+            if (empty($faviconUrl)) {
+                continue;
+            }
+
+            // If it's an absolute URL, return it
+            if (filter_var($faviconUrl, FILTER_VALIDATE_URL)) {
+                return $faviconUrl;
+            }
+
+            // Convert relative to absolute
+            $parts = parse_url($pageUrl);
+            $scheme = $parts['scheme'] ?? 'https';
+            $host = $parts['host'] ?? '';
+            $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+            if ($faviconUrl[0] === '/') {
+                // Absolute path
+                return $scheme . '://' . $host . $port . $faviconUrl;
+            } else {
+                // Relative path
+                $path = $parts['path'] ?? '/';
+                $pathDir = dirname($path);
+                if ($pathDir !== '/') {
+                    $pathDir .= '/';
+                }
+                return $scheme . '://' . $host . $port . $pathDir . $faviconUrl;
+            }
+        }
+
+        return null;
     }
 }

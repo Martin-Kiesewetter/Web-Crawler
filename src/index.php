@@ -232,6 +232,18 @@
             margin-right: 5px;
         }
 
+        .favicon-cell {
+            text-align: center;
+            width: 50px;
+        }
+
+        .favicon-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
         .url-cell {
             max-width: 400px;
             overflow: hidden;
@@ -309,6 +321,7 @@
             <table id="jobsTable" class="display">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>ID</th>
                         <th>Domain</th>
                         <th>Status</th>
@@ -319,7 +332,7 @@
                     </tr>
                 </thead>
                 <tbody id="jobsBody">
-                    <tr><td colspan="7" class="loading">Lade...</td></tr>
+                    <tr><td colspan="8" class="loading">Lade...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -486,8 +499,16 @@
                     }
 
                     const tbody = document.getElementById('jobsBody');
-                    tbody.innerHTML = data.jobs.map(job => `
+                    tbody.innerHTML = data.jobs.map(job => {
+                        // Get favicon from first page if available
+                        let faviconHtml = '<div class="favicon-cell">-</div>';
+                        if (job.favicon_url) {
+                            faviconHtml = `<div class="favicon-cell"><img src="${job.favicon_url}" alt="Favicon" class="favicon-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect fill=%22%23ccc%22 width=%2216%22 height=%2216%22/%3E%3Ctext x=%228%22 y=%2212%22 text-anchor=%22middle%22 font-size=%2210%22 fill=%22%23999%22%3E?%3C/text%3E%3C/svg%3E'" /></div>`;
+                        }
+
+                        return `
                         <tr>
+                            <td>${faviconHtml}</td>
                             <td>${job.id}</td>
                             <td>${job.domain}</td>
                             <td><span class="status ${job.status}">${job.status}</span></td>
@@ -500,7 +521,8 @@
                                 <button class="action-btn" onclick="deleteJob(${job.id})">Löschen</button>
                             </td>
                         </tr>
-                    `).join('');
+                    `;
+                    }).join('');
 
                     // Initialize DataTable
                     jobsDataTable = $('#jobsTable').DataTable({
