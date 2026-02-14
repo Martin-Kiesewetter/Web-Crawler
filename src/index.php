@@ -171,6 +171,27 @@
             border-radius: 6px;
         }
 
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
         .stat-label {
             font-size: 12px;
             color: #7f8c8d;
@@ -278,7 +299,7 @@
         <div class="card">
             <h2>Neue Domain crawlen</h2>
             <div class="input-group">
-                <input type="text" id="domainInput" placeholder="example.com oder https://example.com" />
+                <input type="text" id="domainInput" placeholder="example.com oder https://example.com" onkeypress="if(event.key==='Enter') startCrawl()" />
                 <button onclick="startCrawl()">Crawl starten</button>
             </div>
         </div>
@@ -432,8 +453,17 @@
 
                 if (data.success) {
                     document.getElementById('domainInput').value = '';
-                    loadJobs();
-                    alert('Crawl gestartet! Job ID: ' + data.job_id);
+                    const jobId = data.job_id;
+                    
+                    // Automatically view the job and show live progress
+                    viewJob(jobId);
+                    
+                    // Show a brief notification instead of alert
+                    const notification = document.createElement('div');
+                    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 15px 25px; border-radius: 6px; z-index: 1000; font-weight: bold;';
+                    notification.textContent = 'Crawl gestartet! Job ID: ' + jobId;
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
                 } else {
                     alert('Fehler: ' + data.error);
                 }
@@ -519,16 +549,47 @@
                     const queue = statusData.queue;
                     document.getElementById('jobDomain').textContent = job.domain;
 
-                    const queueInfo = queue ? `
-                        <div class="stat-box">
-                            <div class="stat-label">Warteschlange</div>
-                            <div class="stat-value">${queue.pending || 0}</div>
-                            <div class="stat-sublabel">noch zu crawlen</div>
+                    // Calculate progress
+                    let total = (queue ? (queue.pending + queue.completed) : 0) || job.total_pages || 1;
+                    let completed = (queue ? queue.completed : 0) || 0;
+                    let percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                    const progressBar = `
+                        <div style="margin-top: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 14px; color: #7f8c8d;">Fortschritt</span>
+                                <span style="font-size: 14px; font-weight: bold; color: #2c3e50;">${percentage}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%">
+                                    ${percentage > 10 ? percentage + '%' : ''}
+                                </div>
+                            </div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Verarbeitet</div>
-                            <div class="stat-value">${queue.completed || 0}</div>
-                            <div class="stat-sublabel">abgeschlossen</div>
+                    `;
+
+                    const queueInfo = queue ? `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="stat-box">
+                                <div class="stat-label">Ausstehend</div>
+                                <div class="stat-value">${queue.pending || 0}</div>
+                                <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">noch zu crawlen</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Abgeschlossen</div>
+                                <div class="stat-value">${queue.completed || 0}</div>
+                                <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">verarbeitet</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Verarbeitet</div>
+                                <div class="stat-value">${queue.processing || 0}</div>
+                                <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">läuft gerade</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Fehler</div>
+                                <div class="stat-value">${queue.failed || 0}</div>
+                                <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">fehlgeschlagen</div>
+                            </div>
                         </div>
                     ` : '';
 
@@ -537,13 +598,16 @@
                             <div class="stat-label">Status</div>
                             <div class="stat-value"><span class="status ${job.status}">${job.status}</span></div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Seiten</div>
-                            <div class="stat-value">${job.total_pages}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Links</div>
-                            <div class="stat-value">${job.total_links}</div>
+                        ${progressBar}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                            <div class="stat-box">
+                                <div class="stat-label">Seiten</div>
+                                <div class="stat-value">${job.total_pages}</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Links</div>
+                                <div class="stat-value">${job.total_links}</div>
+                            </div>
                         </div>
                         ${queueInfo}
                     `;
