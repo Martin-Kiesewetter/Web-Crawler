@@ -1,6 +1,6 @@
-# Web Crawler
+# Web Crawler - Screaming Frog Alternative
 
-Eine PHP-Anwendung mit MariaDB, die in Docker läuft.
+Eine leistungsstarke PHP-basierte Web-Crawler-Anwendung mit MariaDB, die in Docker läuft. Der Crawler extrahiert und analysiert Seiten, Links, Bilder und JavaScript-Dateien mit umfangreichen Metadaten.
 
 ## Copyright & Lizenz
 
@@ -11,6 +11,40 @@ Eine PHP-Anwendung mit MariaDB, die in Docker läuft.
 - **Website:** [https://kies-media.de](https://kies-media.de)
 
 ---
+
+## Features
+
+### 🕷️ Crawling-Funktionen
+- **Paralleles Crawling** - 10 gleichzeitige HTTP-Requests für maximale Performance
+- **Intelligente Link-Extraktion** - Erkennt interne/externe Links, nofollow-Attribute
+- **Bild-Extraktion** - Sammelt Bilder mit Alt-Text, Titel, Dimensionen, Responsive-Erkennung
+- **JavaScript-Extraktion** - Erfasst externe JavaScript-Dateien mit Metadaten
+- **Favicon-Extraktion** - Automatische Erkennung von Website-Favicons
+- **Duplikat-Erkennung** - Crawlt jede externe Datei nur einmal pro Job
+- **Asset-Typ-Erkennung** - Unterscheidet automatisch zwischen Seiten, Bildern und Scripts
+
+### 📊 Metadaten-Erfassung
+- **Seiten:** URL, Titel, Meta-Description, Status-Code, Content-Type, Redirects, Favicon
+- **Bilder:** URL, Alt-Text, Titel, Status-Code, Dateigröße, Breite, Höhe, Responsive-Flag, Redirects
+- **Scripts:** URL, Status-Code, Content-Type, Dateigröße, Content-Hash, Redirects
+- **Links:** Quelle, Ziel, Link-Text, Nofollow, Intern/Extern
+
+### 🎨 Benutzeroberfläche
+- **Live-Progress-Tracking** - Echtzeit-Fortschrittsanzeige während des Crawls
+- **Asset-Filter** - Dropdown-Filter für Seiten, Bilder und Scripts
+- **DataTables-Integration** - Sortierbare, durchsuchbare Tabellen
+- **Job-Verwaltung** - Recrawl und Löschen von Jobs
+- **SEO-Analyse** - Titel- und Meta-Description-Längenprüfung
+- **Broken-Links-Erkennung** - Automatische Erkennung defekter Links
+- **Redirect-Analyse** - Übersicht über Weiterleitungen
+
+### 🔧 Technische Features
+- **Docker-basiert** - Einfache Installation und Deployment
+- **PSR-12 konform** - Sauberer, standardisierter Code
+- **PHPStan Level 8** - Höchste Typsicherheit
+- **Umfassende Tests** - 35 Unit- und Integrationstests
+- **Guzzle HTTP Client** - Robuste HTTP-Requests mit Redirect-Tracking
+- **Symfony DomCrawler** - Zuverlässiges HTML-Parsing
 
 ## Anforderungen
 
@@ -36,7 +70,7 @@ docker-compose up -d --build
 
 ## Services
 
-- **PHP Anwendung**: http://localhost:8080
+- **Web Crawler UI**: http://localhost:8080
 - **phpMyAdmin**: http://localhost:8081
 - **MariaDB**: Port 3306
 
@@ -48,33 +82,77 @@ docker-compose up -d --build
 - **Passwort**: app_password
 - **Root Passwort**: root_password
 
+## Verwendung
+
+1. Öffne http://localhost:8080 im Browser
+2. Gib eine Domain ein (z.B. `example.com` oder `https://example.com`)
+3. Drücke Enter oder klicke auf "Crawl starten"
+4. Beobachte den Live-Fortschritt in der Job-Details-Ansicht
+5. Nutze die Tabs und Filter, um die Ergebnisse zu analysieren:
+   - **Seiten** - Alle gecrawlten Assets mit Typ-Filter
+   - **Links** - Extrahierte Links mit Nofollow/Intern-Markierung
+   - **Broken Links** - Defekte URLs (4xx, 5xx)
+   - **Redirects** - Weiterleitungen mit Statistiken
+   - **SEO Analysis** - Titel- und Meta-Description-Probleme
+
 ## Struktur
 
 ```
 .
 ├── docker-compose.yml      # Docker Compose Konfiguration
 ├── Dockerfile              # PHP Container Image
+├── composer.json           # PHP Dependencies
+├── phpunit.xml             # PHPUnit Konfiguration
+├── phpstan.neon            # PHPStan Konfiguration (Level 8)
+├── phpcs.xml               # PHPCS Konfiguration (PSR-12)
+├── AGENTS.md               # Entwickler-Guidelines
 ├── config/                 # Konfigurationsdateien
 │   ├── docker/
-│   │   ├── init.sql        # Datenbank Initialisierung
-│   │   └── start.sh        # Container Start-Script (unused)
+│   │   ├── init.sql        # Datenbank Schema
+│   │   └── start.sh        # Container Start-Script
 │   └── nginx/
 │       └── default.conf    # Nginx Konfiguration
 ├── src/                    # Anwendungscode
-│   ├── api.php
-│   ├── index.php
-│   ├── classes/
-│   └── crawler-worker.php
-├── tests/                  # Test Suite
-│   ├── Unit/
-│   └── Integration/
-├── phpstan.neon            # PHPStan Konfiguration
-└── phpcs.xml               # PHPCS Konfiguration
+│   ├── index.php           # Frontend UI
+│   ├── api.php             # REST API
+│   ├── crawler-worker.php  # Background Crawler Worker
+│   ├── composer.json       # Composer Config
+│   └── classes/
+│       ├── Config.php      # Konfigurationskonstanten
+│       ├── Crawler.php     # Haupt-Crawler-Logik
+│       └── Database.php    # Datenbank-Singleton
+└── tests/                  # Test Suite
+    ├── Unit/               # Unit Tests
+    │   ├── CrawlerTest.php
+    │   ├── DatabaseTest.php
+    │   └── ConfigTest.php
+    └── Integration/        # Integration Tests
+        └── CrawlerIntegrationTest.php
 ```
+
+## Datenbank-Schema
+
+### Tabellen
+
+- **crawl_jobs** - Crawl-Jobs mit Status und Statistiken
+- **pages** - Gecrawlte Seiten mit Metadaten
+- **links** - Extrahierte Links
+- **images** - Extrahierte Bilder mit Metadaten
+- **scripts** - Extrahierte JavaScript-Dateien
+- **crawl_queue** - Verarbeitungs-Queue für paralleles Crawling
 
 ## Entwicklung
 
 Die Anwendungsdateien befinden sich im `src/` Verzeichnis und werden als Volume in den Container gemountet, sodass Änderungen sofort sichtbar sind.
+
+### Entwickler-Guidelines
+
+Siehe `AGENTS.md` für detaillierte Informationen zu:
+- Projekt-Struktur und Modul-Organisation
+- Build-, Test- und Entwicklungs-Commands
+- Coding-Style und Namenskonventionen
+- Testing-Guidelines
+- Commit- und Pull-Request-Guidelines
 
 ## Tests & Code-Qualität
 
@@ -84,15 +162,21 @@ Die Anwendung verwendet PHPUnit für Unit- und Integrationstests:
 
 ```bash
 # Alle Tests ausführen
-docker-compose exec php sh -c "php /var/www/html/vendor/bin/phpunit /var/www/tests/"
+docker-compose exec php php vendor/bin/phpunit /var/www/tests/
 
 # Alternative mit Composer-Script
 docker-compose exec php composer test
 ```
 
+**Test-Statistik:**
+- 35 Tests
+- 82 Assertions
+- Unit Tests: Crawler, Database, Config
+- Integration Tests: Full Crawl Workflows
+
 Die Tests befinden sich in:
-- `tests/Unit/` - Unit Tests
-- `tests/Integration/` - Integration Tests
+- `tests/Unit/` - Unit Tests für einzelne Komponenten
+- `tests/Integration/` - Integration Tests für vollständige Crawl-Workflows
 
 ### Statische Code-Analyse mit PHPStan
 
@@ -129,3 +213,63 @@ docker-compose exec php composer phpcbf
 - Analysierte Pfade: `src/` und `tests/`
 - Ausgeschlossen: `vendor/` Ordner
 - Auto-Fix verfügbar mit `phpcbf`
+
+## API-Endpunkte
+
+Die REST API ist unter `/api.php` verfügbar:
+
+- `POST /api.php?action=start` - Startet einen neuen Crawl-Job
+- `GET /api.php?action=status&job_id=X` - Job-Status und Queue-Statistiken
+- `GET /api.php?action=jobs` - Liste aller Crawl-Jobs
+- `GET /api.php?action=pages&job_id=X` - Gecrawlte Seiten
+- `GET /api.php?action=links&job_id=X` - Extrahierte Links
+- `GET /api.php?action=images&job_id=X&filter=all` - Extrahierte Bilder (Filter: all, broken, responsive, no-alt, with-redirects)
+- `GET /api.php?action=assets&job_id=X&type=all` - Alle Assets (Filter: all, page, image, script)
+- `GET /api.php?action=broken-links&job_id=X` - Defekte Links
+- `GET /api.php?action=seo-analysis&job_id=X` - SEO-Analyse
+- `POST /api.php?action=recrawl` - Job neu crawlen
+- `POST /api.php?action=delete` - Job löschen
+
+## Performance-Optimierungen
+
+- **Parallele Requests:** 10 gleichzeitige HTTP-Requests
+- **Duplikat-Erkennung:** Externe Assets werden nur einmal gecrawlt
+- **Partial Content:** Bild-Dimensionen werden mit Range-Requests ermittelt (nur erste 32KB)
+- **Content-Hash:** Scripts < 500KB werden gehasht für Duplikat-Erkennung
+- **Database Indexing:** Optimierte Indizes für schnelle Abfragen
+- **ON DUPLICATE KEY UPDATE:** Effiziente Datenbank-Updates
+
+## Bekannte Einschränkungen
+
+- Crawl-Tiefe ist auf 50 Ebenen begrenzt (konfigurierbar in `Config.php`)
+- Maximale Redirects: 10 (konfigurierbar)
+- Inline-JavaScript wird nicht extrahiert (nur externe Dateien)
+- Nur interne Links werden zur Queue hinzugefügt
+- Nofollow-Links werden nicht gecrawlt
+
+## Troubleshooting
+
+### Container starten nicht
+```bash
+docker-compose down
+docker-compose up -d --build --force-recreate
+```
+
+### Tests schlagen fehl
+```bash
+# Container neu starten
+docker-compose restart php
+
+# Composer Dependencies neu installieren
+docker-compose exec php composer install
+```
+
+### Datenbank zurücksetzen
+```bash
+docker-compose down -v
+docker-compose up -d
+```
+
+## Lizenz
+
+Alle Rechte vorbehalten © 2025 Martin Kiesewetter
