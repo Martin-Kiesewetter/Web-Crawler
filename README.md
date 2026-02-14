@@ -2,6 +2,8 @@
 
 Eine leistungsstarke PHP-basierte Web-Crawler-Anwendung mit MariaDB, die in Docker läuft. Der Crawler extrahiert und analysiert Seiten, Links, Bilder und JavaScript-Dateien mit umfangreichen Metadaten.
 
+[![Beschreibung](docs/img/Firefox_Screenshot_2026-02-14T21-28-56.733Z.png)](docs/img/Firefox_Screenshot_2026-02-14T21-26-54.462Z.png)
+
 ## Copyright & Lizenz
 
 **Copyright © 2025 Martin Kiesewetter**
