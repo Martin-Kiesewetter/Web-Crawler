@@ -8,12 +8,52 @@
  * @link      https://kies-media.de
  */
 
+declare(strict_types=1);
+
+// Ensure we always respond with JSON
+header('Content-Type: application/json');
+
+// Handle fatal errors during shutdown
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line']
+        ]);
+    }
+});
+
+// Set up error handler
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => $errstr,
+        'file' => $errfile,
+        'line' => $errline
+    ]);
+    exit;
+});
+
+// Set up exception handler
+set_exception_handler(function ($exception) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => $exception->getMessage(),
+        'trace' => $exception->getTraceAsString()
+    ]);
+    exit;
+});
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Database;
 use App\Crawler;
-
-header('Content-Type: application/json');
 
 $db = Database::getInstance();
 

@@ -31,6 +31,9 @@ WORKDIR /var/www/html
 # Copy application files
 COPY ./src /var/www/html
 
+# Install PHP dependencies
+RUN composer install --optimize-autoloader || (echo "Composer install failed" && exit 1)
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
