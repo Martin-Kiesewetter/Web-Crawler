@@ -119,6 +119,8 @@ CREATE TABLE IF NOT EXISTS scripts (
     status_code INT,
     content_type VARCHAR(100),
     file_size INT,
+    redirect_url VARCHAR(2048),
+    redirect_count INT DEFAULT 0,
     crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
     FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL,
@@ -126,5 +128,6 @@ CREATE TABLE IF NOT EXISTS scripts (
     INDEX idx_page (page_id),
     INDEX idx_type (type),
     INDEX idx_url (url(255)),
+    INDEX idx_status_code (status_code),
     UNIQUE KEY unique_external_script (crawl_job_id, page_id, url(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

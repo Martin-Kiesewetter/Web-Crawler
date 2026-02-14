@@ -439,18 +439,14 @@ class Crawler
                 // Convert relative URLs to absolute
                 $scriptUrl = $this->makeAbsoluteUrl($src, $pageUrl);
 
-                // Check if it's an external script (external domain)
-                $scriptHost = parse_url($scriptUrl, PHP_URL_HOST);
-                $isExternal = strtolower($scriptHost ?: '') !== $this->baseDomain;
-
                 // Fetch script metadata
                 $scriptData = $this->getScriptData($scriptUrl);
 
-                // Save external script
+                // Save external script with full metadata
                 $stmt = $this->db->prepare(
-                    "INSERT INTO scripts (crawl_job_id, page_id, url, type, status_code, content_type, file_size) " .
-                    "VALUES (?, ?, ?, 'external', ?, ?, ?) " .
-                    "ON DUPLICATE KEY UPDATE status_code = VALUES(status_code), content_type = VALUES(content_type), file_size = VALUES(file_size)"
+                    "INSERT INTO scripts (crawl_job_id, page_id, url, type, status_code, content_type, file_size, redirect_url, redirect_count, content_hash) " .
+                    "VALUES (?, ?, ?, 'external', ?, ?, ?, ?, ?, ?) " .
+                    "ON DUPLICATE KEY UPDATE status_code = VALUES(status_code), content_type = VALUES(content_type), file_size = VALUES(file_size), redirect_url = VALUES(redirect_url), redirect_count = VALUES(redirect_count), content_hash = VALUES(content_hash)"
                 );
                 $stmt->execute([
                     $this->crawlJobId,
@@ -458,7 +454,10 @@ class Crawler
                     $scriptUrl,
                     $scriptData['status_code'],
                     $scriptData['content_type'],
-                    $scriptData['file_size']
+                    $scriptData['file_size'],
+                    $scriptData['redirect_url'],
+                    $scriptData['redirect_count'],
+                    $scriptData['content_hash']
                 ]);
             } catch (\Exception $e) {
                 echo "Error processing script: " . $e->getMessage() . "\n";
@@ -477,16 +476,18 @@ class Crawler
 
                 // Calculate hash of inline script content
                 $contentHash = hash('sha256', $content);
+                $contentSize = strlen($content);
 
-                // Save inline script
+                // Save inline script with content hash and size
                 $stmt = $this->db->prepare(
-                    "INSERT INTO scripts (crawl_job_id, page_id, type, content_hash) " .
-                    "VALUES (?, ?, 'inline', ?)"
+                    "INSERT INTO scripts (crawl_job_id, page_id, type, content_hash, file_size) " .
+                    "VALUES (?, ?, 'inline', ?, ?)"
                 );
                 $stmt->execute([
                     $this->crawlJobId,
                     $pageId,
-                    $contentHash
+                    $contentHash,
+                    $contentSize
                 ]);
             } catch (\Exception $e) {
                 echo "Error processing inline script: " . $e->getMessage() . "\n";
@@ -497,14 +498,17 @@ class Crawler
     }
 
     /**
-     * Fetch script metadata (status code, content type, file size)
+     * Fetch script metadata (status code, content type, file size, redirects)
      */
     private function getScriptData(string $scriptUrl): array
     {
         $data = [
             'status_code' => null,
             'content_type' => null,
-            'file_size' => null
+            'file_size' => null,
+            'redirect_url' => null,
+            'redirect_count' => 0,
+            'content_hash' => null
         ];
 
         try {
@@ -517,6 +521,26 @@ class Crawler
             $contentLength = $response->getHeaderLine('Content-Length');
             if ($contentLength) {
                 $data['file_size'] = (int)$contentLength;
+            }
+            
+            // Track redirects
+            if ($response->hasHeader('X-Guzzle-Redirect-History')) {
+                $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
+                $data['redirect_count'] = count($redirectHistory);
+                if ($data['redirect_count'] > 0) {
+                    $data['redirect_url'] = end($redirectHistory);
+                }
+            }
+            
+            // Try to get content hash by downloading the script (if small enough)
+            if ($data['file_size'] !== null && $data['file_size'] < 500000) { // Only for scripts < 500KB
+                try {
+                    $getResponse = $this->client->get($scriptUrl, ['allow_redirects' => true]);
+                    $scriptContent = $getResponse->getBody()->getContents();
+                    $data['content_hash'] = hash('sha256', $scriptContent);
+                } catch (\Exception $e) {
+                    // Can't download content, that's ok
+                }
             }
         } catch (\Exception $e) {
             // Script not accessible or error occurred
