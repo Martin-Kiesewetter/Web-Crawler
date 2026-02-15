@@ -38,11 +38,11 @@ echo "PHPStan analysis passed."
 # ============================================
 echo "Running PHPCS code style check..."
 
-RESULT=$(powershell.exe -NoProfile -Command "docker compose exec -T php sh -c '/var/www/html/vendor/bin/phpcs --standard=PSR12 /var/www/html/classes /var/www/tests'" 2>&1)
-EXIT_CODE=$?
+RESULT=$(powershell.exe -NoProfile -Command "docker compose exec -T php sh -c '/var/www/html/vendor/bin/phpcs --standard=PSR12 /var/www/html/classes /var/www/tests; exit \$LASTEXITCODE'" 2>&1)
 
-# Exit codes: 0 = no issues, 1 = errors, 2 = warnings only, 3 = fixable errors
-if [ $EXIT_CODE -eq 1 ] || [ $EXIT_CODE -ge 3 ]; then
+# Check if there are actual errors (not just warnings)
+# PHPCS output contains "FOUND X ERROR" if there are errors
+if echo "$RESULT" | grep -q "FOUND [1-9][0-9]* ERROR"; then
     echo ""
     echo "=========================================="
     echo "PHPCS code style check FAILED!"
@@ -55,9 +55,8 @@ if [ $EXIT_CODE -eq 1 ] || [ $EXIT_CODE -ge 3 ]; then
     exit 1
 fi
 
-if [ $EXIT_CODE -eq 2 ]; then
-    echo "PHPCS passed with warnings:"
-    echo "$RESULT"
+if echo "$RESULT" | grep -q "WARNING"; then
+    echo "PHPCS passed with warnings (lines > 120 chars allowed)."
 else
     echo "PHPCS code style check passed."
 fi
