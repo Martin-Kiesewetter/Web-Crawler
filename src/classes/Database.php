@@ -25,8 +25,9 @@ class Database
     {
         if (self::$instance === null) {
             try {
+                $host = getenv('DB_HOST') ?: 'mariadb';
                 self::$instance = new PDO(
-                    "mysql:host=mariadb;dbname=app_database;charset=utf8mb4",
+                    "mysql:host={$host};dbname=app_database;charset=utf8mb4",
                     "app_user",
                     "app_password",
                     [

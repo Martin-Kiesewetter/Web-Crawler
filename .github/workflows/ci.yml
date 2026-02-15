@@ -6,16 +6,35 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: app_database
+          MYSQL_USER: app_user
+          MYSQL_PASSWORD: app_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_mysql
+
+      - name: Initialize database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot_password app_database < config/docker/init.sql
 
       - run: composer install --prefer-dist --no-progress
 
       - run: composer test
+        env:
+          DB_HOST: 127.0.0.1
 
       - run: vendor/bin/phpstan analyse
 
