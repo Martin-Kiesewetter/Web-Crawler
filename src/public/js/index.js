@@ -33,7 +33,7 @@ async function startCrawl() {
             viewJob(jobId);
             
             const notification = document.createElement('div');
-            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 15px 25px; border-radius: 6px; z-index: 1000; font-weight: bold;';
+            notification.className = 'notification-toast';
             notification.textContent = 'Crawl gestartet! Job ID: ' + jobId;
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 3000);
@@ -132,10 +132,10 @@ async function loadJobDetails() {
             let percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             const progressBar = `
-                <div style="margin-top: 20px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 14px; color: #7f8c8d;">Fortschritt</span>
-                        <span style="font-size: 14px; font-weight: bold; color: #2c3e50;">${percentage}%</span>
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span class="progress-label">Fortschritt</span>
+                        <span class="progress-value">${percentage}%</span>
                     </div>
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: ${percentage}%">
@@ -146,26 +146,26 @@ async function loadJobDetails() {
             `;
 
             const queueInfo = queue ? `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="queue-grid">
                     <div class="stat-box">
                         <div class="stat-label">Ausstehend</div>
                         <div class="stat-value">${queue.pending || 0}</div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">noch zu crawlen</div>
+                        <div class="stat-sublabel-inline">noch zu crawlen</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Abgeschlossen</div>
                         <div class="stat-value">${queue.completed || 0}</div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">verarbeitet</div>
+                        <div class="stat-sublabel-inline">verarbeitet</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Verarbeitet</div>
                         <div class="stat-value">${queue.processing || 0}</div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">läuft gerade</div>
+                        <div class="stat-sublabel-inline">läuft gerade</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Fehler</div>
                         <div class="stat-value">${queue.failed || 0}</div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">fehlgeschlagen</div>
+                        <div class="stat-sublabel-inline">fehlgeschlagen</div>
                     </div>
                 </div>
             ` : '';
@@ -176,7 +176,7 @@ async function loadJobDetails() {
                     <div class="stat-value"><span class="status ${job.status}">${job.status}</span></div>
                 </div>
                 ${progressBar}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div class="stats-grid">
                     <div class="stat-box">
                         <div class="stat-label">Seiten</div>
                         <div class="stat-value">${job.total_pages}</div>
@@ -330,11 +330,11 @@ async function loadJobDetails() {
 
             if (seoData.duplicates.length > 0) {
                 document.getElementById('seoDuplicatesBody').innerHTML = seoData.duplicates.map(dup => `
-                    <div class="stat-box" style="margin-bottom: 15px;">
+                    <div class="stat-box duplicate-box">
                         <div class="stat-label">Duplicate ${dup.type}</div>
-                        <div style="font-size: 14px; margin: 10px 0;"><strong>${dup.content}</strong></div>
-                        <div style="font-size: 12px;">Found on ${dup.urls.length} pages:</div>
-                        <ul style="margin-top: 5px; font-size: 12px;">
+                        <div class="duplicate-content"><strong>${dup.content}</strong></div>
+                        <div class="duplicate-info">Found on ${dup.urls.length} pages:</div>
+                        <ul class="duplicate-list">
                             ${dup.urls.map(url => `<li>${url}</li>`).join('')}
                         </ul>
                     </div>
@@ -367,7 +367,7 @@ async function loadJobDetails() {
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Excessive (>${stats.threshold})</div>
-                    <div class="stat-value" style="color: ${stats.excessive > 0 ? '#e74c3c' : '#27ae60'}">${stats.excessive}</div>
+                    <div class="stat-value ${stats.excessive > 0 ? 'stat-value-danger' : 'stat-value-success'}">${stats.excessive}</div>
                     <div class="stat-sublabel">threshold: ${stats.threshold}</div>
                 </div>
             `;
@@ -383,11 +383,11 @@ async function loadJobDetails() {
                     const redirectType = isPermRedirect ? 'Permanent' : 'Temporary';
 
                     return `
-                        <tr style="${isExcessive ? 'background-color: #fff3cd;' : ''}">
+                        <tr class="${isExcessive ? 'redirect-row-excessive' : ''}">
                             <td class="url-cell" title="${redirect.url}">${redirect.url}</td>
                             <td class="url-cell" title="${redirect.redirect_url || '-'}">${redirect.redirect_url || '-'}</td>
                             <td><span class="status ${isPermRedirect ? 'completed' : 'running'}">${redirect.status_code}</span></td>
-                            <td><strong ${isExcessive ? 'style="color: #e74c3c;"' : ''}>${redirect.redirect_count}</strong></td>
+                            <td><strong class="${isExcessive ? 'redirect-count-excessive' : ''}">${redirect.redirect_count}</strong></td>
                             <td>${redirectType}</td>
                         </tr>
                     `;
@@ -474,7 +474,10 @@ function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-    event.target.classList.add('active');
+    const clickedTab = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (clickedTab) {
+        clickedTab.classList.add('active');
+    }
     document.getElementById(tab + '-tab').classList.add('active');
     
     if (tab === 'pages') {
@@ -500,7 +503,7 @@ async function loadNofollowLinks(filter = 'all') {
                     <td class="url-cell" title="${link.source_url}">${link.source_url}</td>
                     <td class="url-cell" title="${link.target_url}">${link.target_url}</td>
                     <td>${link.link_text || '-'}</td>
-                    <td>${link.is_internal ? '<span style="color: #3498db;">Intern</span>' : '<span class="external">Extern</span>'}</td>
+                    <td>${link.is_internal ? '<span class="internal-link">Intern</span>' : '<span class="external">Extern</span>'}</td>
                 </tr>
             `).join('');
 
@@ -543,22 +546,22 @@ async function loadAssetsTable(type = 'all') {
         if (assetsData.success && assetsData.assets.length > 0) {
             document.getElementById('assetsBody').innerHTML = assetsData.assets.map(asset => {
                 let typeLabel = asset.asset_type;
-                let typeColor = '#7f8c8d';
+                let typeClass = 'asset-type-default';
                 
                 if (typeLabel === 'page') {
                     typeLabel = 'Seite';
-                    typeColor = '#3498db';
+                    typeClass = 'asset-type-page';
                 } else if (typeLabel === 'image') {
                     typeLabel = 'Bild';
-                    typeColor = '#2ecc71';
+                    typeClass = 'asset-type-image';
                 } else if (typeLabel === 'script') {
                     typeLabel = 'Script';
-                    typeColor = '#e74c3c';
+                    typeClass = 'asset-type-script';
                 }
                 
                 return `
                     <tr>
-                        <td><span style="background: ${typeColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">${typeLabel}</span></td>
+                        <td><span class="asset-type-badge ${typeClass}">${typeLabel}</span></td>
                         <td class="url-cell" title="${asset.url}">${asset.url}</td>
                         <td>${asset.title || '-'}</td>
                         <td><span class="status ${asset.status_code >= 400 ? 'failed' : 'completed'}">${asset.status_code || 'N/A'}</span></td>
@@ -595,3 +598,34 @@ async function loadAssetsTable(type = 'all') {
 // Initial load
 loadJobs();
 setInterval(loadJobs, 5000);
+
+// jQuery Event Handlers
+$(document).ready(function() {
+    // Start crawl button click
+    $('#startCrawlBtn').on('click', function() {
+        startCrawl();
+    });
+
+    // Domain input enter key
+    $('#domainInput').on('keypress', function(e) {
+        if (e.key === 'Enter') {
+            startCrawl();
+        }
+    });
+
+    // Tab switching
+    $('.tab').on('click', function() {
+        const tab = $(this).data('tab');
+        switchTab(tab);
+    });
+
+    // Asset type filter
+    $('#assetTypeFilter').on('change', function() {
+        loadAssetsTable($(this).val());
+    });
+
+    // Nofollow filter
+    $('#nofollowFilter').on('change', function() {
+        loadNofollowLinks($(this).val());
+    });
+});

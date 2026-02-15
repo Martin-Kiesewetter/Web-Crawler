@@ -284,3 +284,159 @@ tr:hover {
     cursor: not-allowed;
     opacity: 0.5;
 }
+
+/* Filter Group Styles */
+.filter-group {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-group label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* Stats Margin Bottom */
+.stats-margin-bottom {
+    margin-bottom: 20px;
+}
+
+/* Section Title */
+.section-title {
+    margin-top: 30px;
+}
+
+/* Progress Section */
+.progress-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.progress-label {
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.progress-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Queue Grid */
+.queue-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Stat Sublabel */
+.stat-sublabel-inline {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 5px;
+}
+
+/* Duplicate Content Box */
+.duplicate-box {
+    margin-bottom: 15px;
+}
+
+.duplicate-content {
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.duplicate-info {
+    font-size: 12px;
+}
+
+.duplicate-list {
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+/* Excessive Redirect Row */
+.redirect-row-excessive {
+    background-color: #fff3cd;
+}
+
+.redirect-count-excessive {
+    color: #e74c3c;
+}
+
+/* Asset Type Badge */
+.asset-type-badge {
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Internal Link */
+.internal-link {
+    color: #3498db;
+}
+
+/* Stat Value Colors */
+.stat-value-danger {
+    color: #e74c3c;
+}
+
+.stat-value-success {
+    color: #27ae60;
+}
+
+/* Notification Toast */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #27ae60;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 6px;
+    z-index: 1000;
+    font-weight: bold;
+}
+
+/* Asset Type Colors */
+.asset-type-default {
+    background: #7f8c8d;
+}
+
+.asset-type-page {
+    background: #3498db;
+}
+
+.asset-type-image {
+    background: #2ecc71;
+}
+
+.asset-type-script {
+    background: #e74c3c;
+}

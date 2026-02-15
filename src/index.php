@@ -33,8 +33,8 @@
         <div class="card">
             <h2>Neue Domain crawlen</h2>
             <div class="input-group">
-                <input type="text" id="domainInput" placeholder="example.com oder https://example.com" onkeypress="if(event.key==='Enter') startCrawl()" />
-                <button onclick="startCrawl()">Crawl starten</button>
+                <input type="text" id="domainInput" placeholder="example.com oder https://example.com" />
+                <button id="startCrawlBtn">Crawl starten</button>
             </div>
         </div>
 
@@ -66,17 +66,17 @@
                 <div class="stats" id="jobStats"></div>
 
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('pages')">Seiten</button>
-                    <button class="tab" onclick="switchTab('links')">Links</button>
-                    <button class="tab" onclick="switchTab('broken')">Broken Links</button>
-                    <button class="tab" onclick="switchTab('redirects')">Redirects</button>
-                    <button class="tab" onclick="switchTab('seo')">SEO Analysis</button>
+                    <button class="tab active" data-tab="pages">Seiten</button>
+                    <button class="tab" data-tab="links">Links</button>
+                    <button class="tab" data-tab="broken">Broken Links</button>
+                    <button class="tab" data-tab="redirects">Redirects</button>
+                    <button class="tab" data-tab="seo">SEO Analysis</button>
                 </div>
 
                 <div class="tab-content active" id="pages-tab">
-                    <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
-                        <label for="assetTypeFilter" style="font-weight: bold; color: #2c3e50;">Inhaltstyp:</label>
-                        <select id="assetTypeFilter" onchange="loadAssetsTable(this.value)" style="padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                    <div class="filter-group">
+                        <label for="assetTypeFilter">Inhaltstyp:</label>
+                        <select id="assetTypeFilter">
                             <option value="all">Alle Assets</option>
                             <option value="page">Seiten</option>
                             <option value="image">Bilder</option>
@@ -134,7 +134,7 @@
 
                 <div class="tab-content" id="redirects-tab">
                     <h3>Redirect Statistics</h3>
-                    <div id="redirectStats" class="stats" style="margin-bottom: 20px;"></div>
+                    <div id="redirectStats" class="stats stats-margin-bottom"></div>
                     <table id="redirectsTable" class="display">
                         <thead>
                             <tr>
@@ -153,7 +153,7 @@
 
                 <div class="tab-content" id="seo-tab">
                     <h3>SEO Issues</h3>
-                    <div id="seoStats" style="margin-bottom: 20px;"></div>
+                    <div id="seoStats" class="stats-margin-bottom"></div>
                     <table id="seoTable" class="display">
                         <thead>
                             <tr>
@@ -168,10 +168,10 @@
                         </tbody>
                     </table>
 
-                    <h3 style="margin-top: 30px;">Nofollow Links</h3>
-                    <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
-                        <label for="nofollowFilter" style="font-weight: bold; color: #2c3e50;">Filter:</label>
-                        <select id="nofollowFilter" onchange="loadNofollowLinks(this.value)" style="padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                    <h3 class="section-title">Nofollow Links</h3>
+                    <div class="filter-group">
+                        <label for="nofollowFilter">Filter:</label>
+                        <select id="nofollowFilter">
                             <option value="all">Alle Nofollow-Links</option>
                             <option value="internal">Interne Nofollow</option>
                             <option value="external">Externe Nofollow</option>
@@ -191,7 +191,7 @@
                         </tbody>
                     </table>
 
-                    <h3 style="margin-top: 30px;">Duplicate Content</h3>
+                    <h3 class="section-title">Duplicate Content</h3>
                     <div id="seoDuplicatesBody"></div>
                 </div>
             </div>
