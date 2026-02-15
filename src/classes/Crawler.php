@@ -349,7 +349,7 @@ class Crawler
                     $imageData['height'] ?? null,
                     $isResponsive ? 1 : 0,
                     $imageData['redirect_url'] ?? null,
-                    $imageData['redirect_count'] ?? 0
+                    $imageData['redirect_count']
                 ]);
             } catch (\Exception $e) {
                 echo "Error processing image: " . $e->getMessage() . "\n";
@@ -360,6 +360,8 @@ class Crawler
 
     /**
      * Fetch image metadata (size, status code, etc.)
+     *
+     * @return array{status_code: int|null, content_type: string|null, file_size: int|null, width: int|null, height: int|null, redirect_url: string|null, redirect_count: int}
      */
     private function getImageData(string $imageUrl): array
     {
@@ -390,12 +392,14 @@ class Crawler
                 $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
                 $data['redirect_count'] = count($redirectHistory);
                 if ($data['redirect_count'] > 0) {
-                    $data['redirect_url'] = end($redirectHistory);
+                    $lastRedirect = end($redirectHistory);
+                    $data['redirect_url'] = $lastRedirect !== false ? $lastRedirect : null;
                 }
             }
 
             // Try to get image dimensions for common formats
-            if (str_contains($data['content_type'] ?? '', 'image/')) {
+            $contentType = $data['content_type'];
+            if ($contentType !== '' && str_contains($contentType, 'image/')) {
                 $dimensions = $this->getImageDimensions($imageUrl);
                 if ($dimensions) {
                     $data['width'] = $dimensions['width'];
@@ -412,6 +416,8 @@ class Crawler
 
     /**
      * Get image dimensions without downloading entire file
+     *
+     * @return array{width: int, height: int}|null
      */
     private function getImageDimensions(string $imageUrl): ?array
     {
@@ -499,8 +505,8 @@ class Crawler
     }
 
     /**
-     * Fetch script metadata (status code, content type, file size, redirects)
-     */
+     * Fetch script metadata (status code, content type, file size, redirects)     *
+     * @return array{status_code: int|null, content_type: string|null, file_size: int|null, redirect_url: string|null, redirect_count: int, content_hash: string|null}     */
     private function getScriptData(string $scriptUrl): array
     {
         $data = [
@@ -529,7 +535,8 @@ class Crawler
                 $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
                 $data['redirect_count'] = count($redirectHistory);
                 if ($data['redirect_count'] > 0) {
-                    $data['redirect_url'] = end($redirectHistory);
+                    $lastRedirect = end($redirectHistory);
+                    $data['redirect_url'] = $lastRedirect !== false ? $lastRedirect : null;
                 }
             }
             
@@ -673,7 +680,7 @@ class Crawler
     /**
      * Extract favicon URL from HTML
      */
-    private function extractFavicon(DomCrawler $domCrawler, string $pageUrl): ?string
+    private function extractFavicon(DomCrawler $domCrawler, string $pageUrl): string
     {
         // Try different favicon link methods in order of preference
         $faviconUrls = [];
@@ -707,10 +714,6 @@ class Crawler
 
         // Convert relative URLs to absolute
         foreach ($faviconUrls as $faviconUrl) {
-            if (empty($faviconUrl)) {
-                continue;
-            }
-
             // If it's an absolute URL, return it
             if (filter_var($faviconUrl, FILTER_VALIDATE_URL)) {
                 return $faviconUrl;
@@ -735,7 +738,5 @@ class Crawler
                 return $scheme . '://' . $host . $port . $pathDir . $faviconUrl;
             }
         }
-
-        return null;
     }
 }

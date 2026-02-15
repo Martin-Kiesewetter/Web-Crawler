@@ -71,8 +71,9 @@ class CrawlerIntegrationTest extends TestCase
     public function testFaviconColumnExists(): void
     {
         $stmt = $this->db->query("DESCRIBE pages favicon_url");
-        $result = $stmt->fetch();
+        $result = $stmt !== false ? $stmt->fetch() : false;
 
+        $this->assertNotFalse($result);
         $this->assertIsArray($result);
         $this->assertArrayHasKey('Field', $result);
         $this->assertEquals('favicon_url', $result['Field']);

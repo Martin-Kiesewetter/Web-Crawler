@@ -325,7 +325,7 @@ class CrawlerTest extends TestCase
         $output = ob_get_clean();
 
         // Verify that the image was skipped
-        $this->assertStringContainsString('Skipping already crawled image', $output);
+        $this->assertStringContainsString('Skipping already crawled image', $output ?: '');
 
         // Verify that only one image entry exists
         $stmt = $db->prepare("SELECT COUNT(*) FROM images WHERE crawl_job_id = ? AND url = ?");
@@ -382,7 +382,7 @@ class CrawlerTest extends TestCase
         $output = ob_get_clean();
 
         // Verify that the script was skipped
-        $this->assertStringContainsString('Skipping already crawled script', $output);
+        $this->assertStringContainsString('Skipping already crawled script', $output ?: '');
 
         // Verify that only one script entry exists
         $stmt = $db->prepare("SELECT COUNT(*) FROM scripts WHERE crawl_job_id = ? AND url = ?");
@@ -397,10 +397,15 @@ class CrawlerTest extends TestCase
 
     /**
      * Helper method to call private methods for testing
+     *
+     * @param object $object
+     * @param string $methodName
+     * @param array<int, mixed> $parameters
+     * @return mixed
      */
-    private function callPrivateMethod($object, $methodName, $parameters = [])
+    private function callPrivateMethod(object $object, string $methodName, array $parameters = []): mixed
     {
-        $reflection = new \ReflectionClass(get_class($object));
+        $reflection = new \ReflectionClass($object);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
         return $method->invokeArgs($object, $parameters);
@@ -408,10 +413,14 @@ class CrawlerTest extends TestCase
 
     /**
      * Helper method to set private properties for testing
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param mixed $value
      */
-    private function setPrivateProperty($object, $propertyName, $value): void
+    private function setPrivateProperty(object $object, string $propertyName, mixed $value): void
     {
-        $reflection = new \ReflectionClass(get_class($object));
+        $reflection = new \ReflectionClass($object);
         $property = $reflection->getProperty($propertyName);
         $property->setAccessible(true);
         $property->setValue($object, $value);

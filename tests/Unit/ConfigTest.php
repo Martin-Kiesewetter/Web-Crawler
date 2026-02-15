@@ -8,54 +8,27 @@ use App\Config;
 class ConfigTest extends TestCase
 {
     /**
-     * Test that MAX_REDIRECT_THRESHOLD constant exists
+     * Test that MAX_REDIRECT_THRESHOLD constant exists and has correct value
      */
-    public function testMaxRedirectThresholdConstantExists(): void
+    public function testMaxRedirectThresholdConstant(): void
     {
-        $this->assertTrue(defined('App\Config::MAX_REDIRECT_THRESHOLD'));
+        $this->assertSame(3, Config::MAX_REDIRECT_THRESHOLD);
     }
 
     /**
-     * Test that MAX_CRAWL_DEPTH constant exists
+     * Test that MAX_CRAWL_DEPTH constant exists and has correct value
      */
-    public function testMaxCrawlDepthConstantExists(): void
+    public function testMaxCrawlDepthConstant(): void
     {
-        $this->assertTrue(defined('App\Config::MAX_CRAWL_DEPTH'));
+        $this->assertSame(50, Config::MAX_CRAWL_DEPTH);
     }
 
     /**
-     * Test that CONCURRENCY constant exists
+     * Test that CONCURRENCY constant exists and has correct value
      */
-    public function testConcurrencyConstantExists(): void
+    public function testConcurrencyConstant(): void
     {
-        $this->assertTrue(defined('App\Config::CONCURRENCY'));
-    }
-
-    /**
-     * Test MAX_REDIRECT_THRESHOLD value and type
-     */
-    public function testMaxRedirectThresholdValue(): void
-    {
-        $this->assertIsInt(Config::MAX_REDIRECT_THRESHOLD);
-        $this->assertEquals(3, Config::MAX_REDIRECT_THRESHOLD);
-    }
-
-    /**
-     * Test MAX_CRAWL_DEPTH value and type
-     */
-    public function testMaxCrawlDepthValue(): void
-    {
-        $this->assertIsInt(Config::MAX_CRAWL_DEPTH);
-        $this->assertEquals(50, Config::MAX_CRAWL_DEPTH);
-    }
-
-    /**
-     * Test CONCURRENCY value and type
-     */
-    public function testConcurrencyValue(): void
-    {
-        $this->assertIsInt(Config::CONCURRENCY);
-        $this->assertEquals(10, Config::CONCURRENCY);
+        $this->assertSame(10, Config::CONCURRENCY);
     }
 
     /**
@@ -104,9 +77,14 @@ class ConfigTest extends TestCase
     public function testConfigAccessibleWithoutInstantiation(): void
     {
         // Config should be a static class, no need to instantiate
-        $this->assertIsInt(Config::CONCURRENCY);
-        $this->assertIsInt(Config::MAX_CRAWL_DEPTH);
-        $this->assertIsInt(Config::MAX_REDIRECT_THRESHOLD);
+        // Just verify we can access the constants
+        $concurrency = Config::CONCURRENCY;
+        $depth = Config::MAX_CRAWL_DEPTH;
+        $redirect = Config::MAX_REDIRECT_THRESHOLD;
+        
+        $this->assertSame(10, $concurrency);
+        $this->assertSame(50, $depth);
+        $this->assertSame(3, $redirect);
     }
 
     /**
