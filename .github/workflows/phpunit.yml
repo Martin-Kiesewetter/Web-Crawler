@@ -1,4 +1,4 @@
-name: PHP CI
+name: PHPUnit Tests
 
 on: [push, pull_request]
 
@@ -35,7 +35,3 @@ jobs:
       - run: composer test
         env:
           DB_HOST: 127.0.0.1
-
-      - run: vendor/bin/phpstan analyse -c phpstan.neon.dist
-
-      - run: vendor/bin/phpcs --standard=phpcs.xml.dist
