@@ -1,0 +1,901 @@
+openapi: 3.0.3
+info:
+  title: Web Crawler API
+  description: |
+    REST API für den Web Crawler - Ein leistungsstarkes PHP-basiertes Tool zum Crawlen und Analysieren von Websites.
+    
+    ## Features
+    - Paralleles Crawling mit 10 gleichzeitigen Requests
+    - Extraktion von Seiten, Links, Bildern und JavaScript-Dateien
+    - SEO-Analyse mit Titel- und Meta-Description-Prüfung
+    - Broken-Links-Erkennung und Redirect-Analyse
+    
+    ## Authentifizierung
+    Diese API benötigt keine Authentifizierung (nur für lokale Entwicklung).
+  version: 1.0.0
+  contact:
+    name: Martin Kiesewetter
+    email: mki@kies-media.de
+    url: https://kies-media.de
+  license:
+    name: Proprietary
+    url: https://github.com/Martin-Kiesewetter/Web-Crawler
+
+servers:
+  - url: http://localhost:8080
+    description: Lokaler Entwicklungsserver
+
+tags:
+  - name: Jobs
+    description: Crawl-Job Verwaltung
+  - name: Assets
+    description: Gecrawlte Assets (Seiten, Bilder, Scripts)
+  - name: Links
+    description: Link-Analyse
+  - name: Analysis
+    description: SEO und Redirect-Analyse
+
+paths:
+  /api.php:
+    get:
+      tags:
+        - Jobs
+      summary: Job-Status abrufen
+      description: Ruft den Status eines Crawl-Jobs ab, inklusive Queue-Statistiken.
+      operationId: getJobStatus
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [status]
+          example: status
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Erfolgreiche Anfrage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job:
+                    $ref: '#/components/schemas/CrawlJob'
+                  queue:
+                    $ref: '#/components/schemas/QueueStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Job nicht gefunden
+
+    post:
+      tags:
+        - Jobs
+      summary: Crawl-Job starten
+      description: Startet einen neuen Crawl-Job für die angegebene Domain.
+      operationId: startCrawl
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [start]
+          example: start
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - domain
+              properties:
+                domain:
+                  type: string
+                  description: Zu crawlende Domain (mit oder ohne https://)
+                  example: example.com
+      responses:
+        '200':
+          description: Crawl-Job erfolgreich gestartet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job_id:
+                    type: integer
+                    example: 1
+                  message:
+                    type: string
+                    example: Crawl job started
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api.php?action=jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Alle Crawl-Jobs auflisten
+      description: Gibt eine Liste aller Crawl-Jobs zurück (max. 50).
+      operationId: listJobs
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [jobs]
+      responses:
+        '200':
+          description: Liste der Crawl-Jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CrawlJob'
+
+  /api.php?action=pages:
+    get:
+      tags:
+        - Assets
+      summary: Gecrawlte Seiten abrufen
+      description: Gibt alle gecrawlten Seiten für einen Job zurück.
+      operationId: getPages
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pages]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste der Seiten
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  pages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Page'
+
+  /api.php?action=links:
+    get:
+      tags:
+        - Links
+      summary: Extrahierte Links abrufen
+      description: Gibt alle extrahierten Links für einen Job zurück.
+      operationId: getLinks
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [links]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste der Links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+
+  /api.php?action=images:
+    get:
+      tags:
+        - Assets
+      summary: Extrahierte Bilder abrufen
+      description: Gibt alle extrahierten Bilder für einen Job zurück, mit optionalen Filtern.
+      operationId: getImages
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [images]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+        - name: filter
+          in: query
+          required: false
+          description: Filter für Bilder
+          schema:
+            type: string
+            enum: [all, broken, responsive, non-responsive, no-alt, with-redirects]
+            default: all
+      responses:
+        '200':
+          description: Liste der Bilder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  images:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Image'
+                  filter:
+                    type: string
+                    example: all
+
+  /api.php?action=assets:
+    get:
+      tags:
+        - Assets
+      summary: Alle Assets abrufen
+      description: Gibt alle Assets (Seiten, Bilder, Scripts) für einen Job zurück.
+      operationId: getAssets
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [assets]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+        - name: type
+          in: query
+          required: false
+          description: Filter nach Asset-Typ
+          schema:
+            type: string
+            enum: [all, page, image, script]
+            default: all
+      responses:
+        '200':
+          description: Liste der Assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  assets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+                  type_filter:
+                    type: string
+                    example: all
+                  total:
+                    type: integer
+                    example: 150
+
+  /api.php?action=broken-links:
+    get:
+      tags:
+        - Links
+      summary: Defekte Links abrufen
+      description: Gibt alle defekten Links (4xx, 5xx Status-Codes) für einen Job zurück.
+      operationId: getBrokenLinks
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [broken-links]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste der defekten Links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  broken_links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Page'
+
+  /api.php?action=seo-analysis:
+    get:
+      tags:
+        - Analysis
+      summary: SEO-Analyse abrufen
+      description: |
+        Führt eine SEO-Analyse durch und gibt Probleme mit Titeln und Meta-Descriptions zurück.
+        
+        **Erkannte Probleme:**
+        - Fehlende Titel
+        - Titel zu kurz (< 30 Zeichen) oder zu lang (> 60 Zeichen)
+        - Fehlende Meta-Descriptions
+        - Meta-Descriptions zu kurz (< 70 Zeichen) oder zu lang (> 160 Zeichen)
+        - Doppelte Titel oder Meta-Descriptions
+      operationId: getSeoAnalysis
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [seo-analysis]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: SEO-Analyse Ergebnisse
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  issues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SeoIssue'
+                  duplicates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SeoDuplicate'
+                  total_pages:
+                    type: integer
+                    example: 25
+
+  /api.php?action=nofollow-links:
+    get:
+      tags:
+        - Links
+      summary: Nofollow-Links abrufen
+      description: Gibt alle Nofollow-Links für einen Job zurück.
+      operationId: getNofollowLinks
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [nofollow-links]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+        - name: filter
+          in: query
+          required: false
+          description: Filter nach intern/extern
+          schema:
+            type: string
+            enum: [all, internal, external]
+            default: all
+      responses:
+        '200':
+          description: Liste der Nofollow-Links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  nofollow_links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+                  filter:
+                    type: string
+                    example: all
+
+  /api.php?action=redirects:
+    get:
+      tags:
+        - Analysis
+      summary: Redirects abrufen
+      description: |
+        Gibt alle Redirects für einen Job zurück mit Statistiken.
+        
+        **Redirect-Typen:**
+        - Permanent: 301, 308
+        - Temporary: 302, 303, 307
+        - Excessive: Mehr als 3 Redirects
+      operationId: getRedirects
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [redirects]
+        - name: job_id
+          in: query
+          required: true
+          description: ID des Crawl-Jobs
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Redirect-Liste und Statistiken
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  redirects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Redirect'
+                  stats:
+                    $ref: '#/components/schemas/RedirectStats'
+
+  /api.php?action=recrawl:
+    post:
+      tags:
+        - Jobs
+      summary: Job neu crawlen
+      description: Löscht alle Daten eines Jobs und startet den Crawl neu.
+      operationId: recrawlJob
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [recrawl]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - job_id
+                - domain
+              properties:
+                job_id:
+                  type: integer
+                  description: ID des Crawl-Jobs
+                  example: 1
+                domain:
+                  type: string
+                  description: Zu crawlende Domain
+                  example: example.com
+      responses:
+        '200':
+          description: Recrawl erfolgreich gestartet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  job_id:
+                    type: integer
+                    example: 1
+                  message:
+                    type: string
+                    example: Recrawl started
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api.php?action=delete:
+    post:
+      tags:
+        - Jobs
+      summary: Job löschen
+      description: Löscht einen Crawl-Job und alle zugehörigen Daten.
+      operationId: deleteJob
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [delete]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - job_id
+              properties:
+                job_id:
+                  type: integer
+                  description: ID des zu löschenden Jobs
+                  example: 1
+      responses:
+        '200':
+          description: Job erfolgreich gelöscht
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Job and all related data deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  schemas:
+    CrawlJob:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        domain:
+          type: string
+          example: https://example.com
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+          example: completed
+        total_pages:
+          type: integer
+          example: 25
+        total_links:
+          type: integer
+          example: 150
+        total_images:
+          type: integer
+          example: 45
+        total_scripts:
+          type: integer
+          example: 12
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-02-15 10:30:00'
+        started_at:
+          type: string
+          format: date-time
+          example: '2025-02-15 10:30:01'
+        completed_at:
+          type: string
+          format: date-time
+          example: '2025-02-15 10:35:42'
+        favicon_url:
+          type: string
+          nullable: true
+          example: https://example.com/favicon.ico
+
+    QueueStats:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 30
+        pending:
+          type: integer
+          example: 0
+        processing:
+          type: integer
+          example: 0
+        completed:
+          type: integer
+          example: 28
+        failed:
+          type: integer
+          example: 2
+
+    Page:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        crawl_job_id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          example: https://example.com/page
+        title:
+          type: string
+          nullable: true
+          example: Example Page Title
+        meta_description:
+          type: string
+          nullable: true
+          example: This is an example meta description.
+        status_code:
+          type: integer
+          example: 200
+        content_type:
+          type: string
+          nullable: true
+          example: text/html; charset=utf-8
+        redirect_url:
+          type: string
+          nullable: true
+        redirect_count:
+          type: integer
+          example: 0
+        favicon_url:
+          type: string
+          nullable: true
+        crawled_at:
+          type: string
+          format: date-time
+
+    Link:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        crawl_job_id:
+          type: integer
+          example: 1
+        source_url:
+          type: string
+          example: https://example.com/page1
+        target_url:
+          type: string
+          example: https://example.com/page2
+        link_text:
+          type: string
+          nullable: true
+          example: Click here
+        is_nofollow:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        is_internal:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        crawl_job_id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          example: https://example.com/image.jpg
+        alt_text:
+          type: string
+          nullable: true
+          example: Example image
+        title:
+          type: string
+          nullable: true
+        status_code:
+          type: integer
+          example: 200
+        content_type:
+          type: string
+          nullable: true
+          example: image/jpeg
+        file_size:
+          type: integer
+          nullable: true
+          example: 45000
+        width:
+          type: integer
+          nullable: true
+          example: 800
+        height:
+          type: integer
+          nullable: true
+          example: 600
+        is_responsive:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        redirect_count:
+          type: integer
+          example: 0
+        crawled_at:
+          type: string
+          format: date-time
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        crawl_job_id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          example: https://example.com/asset
+        title:
+          type: string
+          nullable: true
+        status_code:
+          type: integer
+          example: 200
+        crawled_at:
+          type: string
+          format: date-time
+        asset_type:
+          type: string
+          enum: [page, image, script]
+          example: page
+
+    SeoIssue:
+      type: object
+      properties:
+        url:
+          type: string
+          example: https://example.com/page
+        title:
+          type: string
+          nullable: true
+        title_length:
+          type: integer
+          example: 45
+        meta_description:
+          type: string
+          nullable: true
+        meta_length:
+          type: integer
+          example: 120
+        issues:
+          type: array
+          items:
+            type: string
+          example: ["Title too short (25 chars)", "Meta description missing"]
+
+    SeoDuplicate:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [title, meta_description]
+          example: title
+        content:
+          type: string
+          example: Duplicate Page Title
+        urls:
+          type: array
+          items:
+            type: string
+          example: ["https://example.com/page1", "https://example.com/page2"]
+
+    Redirect:
+      type: object
+      properties:
+        url:
+          type: string
+          example: https://example.com/old-page
+        title:
+          type: string
+          nullable: true
+        status_code:
+          type: integer
+          example: 301
+        redirect_url:
+          type: string
+          example: https://example.com/new-page
+        redirect_count:
+          type: integer
+          example: 1
+
+    RedirectStats:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 15
+        permanent:
+          type: integer
+          example: 10
+        temporary:
+          type: integer
+          example: 5
+        excessive:
+          type: integer
+          example: 2
+        threshold:
+          type: integer
+          example: 3
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Domain is required
+
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -231,19 +231,28 @@ docker-compose exec php composer phpcbf
 
 ## API-Endpunkte
 
-Die REST API ist unter `/api.php` verfügbar:
+Die REST API ist unter `/api.php` verfügbar. Die vollständige API-Dokumentation ist im OpenAPI/Swagger-Format verfügbar:
 
-- `POST /api.php?action=start` - Startet einen neuen Crawl-Job
-- `GET /api.php?action=status&job_id=X` - Job-Status und Queue-Statistiken
-- `GET /api.php?action=jobs` - Liste aller Crawl-Jobs
-- `GET /api.php?action=pages&job_id=X` - Gecrawlte Seiten
-- `GET /api.php?action=links&job_id=X` - Extrahierte Links
-- `GET /api.php?action=images&job_id=X&filter=all` - Extrahierte Bilder (Filter: all, broken, responsive, no-alt, with-redirects)
-- `GET /api.php?action=assets&job_id=X&type=all` - Alle Assets (Filter: all, page, image, script)
-- `GET /api.php?action=broken-links&job_id=X` - Defekte Links
-- `GET /api.php?action=seo-analysis&job_id=X` - SEO-Analyse
-- `POST /api.php?action=recrawl` - Job neu crawlen
-- `POST /api.php?action=delete` - Job löschen
+[![Swagger UI](https://img.shields.io/badge/Swagger-UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Martin-Kiesewetter/Web-Crawler/main/docs/openapi.yaml)
+
+### Schnellübersicht
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|--------------|
+| `POST` | `/api.php?action=start` | Startet einen neuen Crawl-Job |
+| `GET` | `/api.php?action=status&job_id=X` | Job-Status und Queue-Statistiken |
+| `GET` | `/api.php?action=jobs` | Liste aller Crawl-Jobs |
+| `GET` | `/api.php?action=pages&job_id=X` | Gecrawlte Seiten |
+| `GET` | `/api.php?action=links&job_id=X` | Extrahierte Links |
+| `GET` | `/api.php?action=images&job_id=X&filter=all` | Extrahierte Bilder |
+| `GET` | `/api.php?action=assets&job_id=X&type=all` | Alle Assets |
+| `GET` | `/api.php?action=broken-links&job_id=X` | Defekte Links |
+| `GET` | `/api.php?action=seo-analysis&job_id=X` | SEO-Analyse |
+| `GET` | `/api.php?action=redirects&job_id=X` | Redirect-Analyse |
+| `POST` | `/api.php?action=recrawl` | Job neu crawlen |
+| `POST` | `/api.php?action=delete` | Job löschen |
+
+> 📖 **Vollständige Dokumentation:** Siehe [`docs/openapi.yaml`](docs/openapi.yaml) für detaillierte Parameter, Schemas und Response-Formate.
 
 ## Performance-Optimierungen
 
