@@ -268,8 +268,6 @@ Die REST API ist unter `/api.php` verfügbar. Die vollständige API-Dokumentatio
 - Crawl-Tiefe ist auf 50 Ebenen begrenzt (konfigurierbar in `Config.php`)
 - Maximale Redirects: 10 (konfigurierbar)
 - Inline-JavaScript wird nicht extrahiert (nur externe Dateien)
-- Nur interne Links werden zur Queue hinzugefügt
-- Nofollow-Links werden nicht gecrawlt
 
 ## Troubleshooting
 
