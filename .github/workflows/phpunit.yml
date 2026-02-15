@@ -30,8 +30,9 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -u root -proot_password app_database < config/docker/init.sql
 
-      - run: composer install --prefer-dist --no-progress
+      - run: composer install --prefer-dist --no-progress --working-dir=src
 
       - run: composer test
+        working-directory: src
         env:
           DB_HOST: 127.0.0.1

@@ -21,7 +21,6 @@ services:
       - ./composer.lock:/var/www/composer.lock
       - ./phpstan.neon:/var/www/phpstan.neon
       - ./phpcs.xml:/var/www/phpcs.xml
-      - ./phpunit.xml:/var/www/phpunit.xml
       - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - mariadb
