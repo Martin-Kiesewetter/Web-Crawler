@@ -36,6 +36,6 @@ jobs:
         env:
           DB_HOST: 127.0.0.1
 
-      - run: vendor/bin/phpstan analyse
+      - run: vendor/bin/phpstan analyse -c phpstan.neon.dist
 
       - run: vendor/bin/phpcs
