@@ -45,7 +45,11 @@ class SecurityTest extends TestCase
 
     protected function tearDown(): void
     {
+        // Clean up all test data in correct order (respecting foreign keys)
         $this->db->prepare("DELETE FROM links WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $this->db->prepare("DELETE FROM images WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $this->db->prepare("DELETE FROM scripts WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $this->db->prepare("DELETE FROM crawl_queue WHERE crawl_job_id = ?")->execute([$this->testJobId]);
         $this->db->prepare("DELETE FROM pages WHERE crawl_job_id = ?")->execute([$this->testJobId]);
         $this->db->prepare("DELETE FROM crawl_jobs WHERE id = ?")->execute([$this->testJobId]);
     }

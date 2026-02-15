@@ -32,9 +32,13 @@ class CrawlerTest extends TestCase
     {
         $db = Database::getInstance();
 
-        // Clean up test data
-        $stmt = $db->prepare("DELETE FROM crawl_jobs WHERE id = ?");
-        $stmt->execute([$this->testJobId]);
+        // Clean up all test data in correct order (respecting foreign keys)
+        $db->prepare("DELETE FROM links WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $db->prepare("DELETE FROM images WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $db->prepare("DELETE FROM scripts WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $db->prepare("DELETE FROM crawl_queue WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $db->prepare("DELETE FROM pages WHERE crawl_job_id = ?")->execute([$this->testJobId]);
+        $db->prepare("DELETE FROM crawl_jobs WHERE id = ?")->execute([$this->testJobId]);
     }
 
     public function testCrawlerCanBeInstantiated(): void
