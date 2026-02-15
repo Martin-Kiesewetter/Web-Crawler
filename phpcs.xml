@@ -5,6 +5,14 @@
     <!-- Use PSR-12 coding standard -->
     <rule ref="PSR12"/>
 
+    <!-- Allow longer lines -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="150"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+
     <!-- Paths to check -->
     <file>/var/www/html</file>
     <file>/var/www/tests</file>
