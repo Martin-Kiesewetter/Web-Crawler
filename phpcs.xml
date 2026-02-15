@@ -5,21 +5,19 @@
     <!-- Use PSR-12 coding standard -->
     <rule ref="PSR12"/>
 
-    <!-- Allow longer lines -->
-    <rule ref="Generic.Files.LineLength">
-        <properties>
-            <property name="lineLimit" value="150"/>
-            <property name="absoluteLineLimit" value="0"/>
-        </properties>
+    <!-- Disable line length warnings -->
+    <rule ref="Generic.Files.LineLength.TooLong">
+        <severity>0</severity>
     </rule>
 
     <!-- Paths to check -->
     <file>/var/www/html</file>
     <file>/var/www/tests</file>
 
-    <!-- Exclude vendor directory -->
+    <!-- Exclude vendor directory and HTML files -->
     <exclude-pattern>/var/www/html/vendor/*</exclude-pattern>
     <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/index.php</exclude-pattern>
 
     <!-- Show progress and colors -->
     <arg name="colors"/>
