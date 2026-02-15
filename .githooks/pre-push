@@ -1,18 +1,20 @@
 #!/bin/sh
 #
-# Pre-push hook: Runs PHPStan analysis before allowing push
-# Aborts push if PHPStan finds errors
+# Pre-push hook: Runs PHPStan and PHPCS before allowing push
+# Aborts push if any analysis finds errors
 #
 # Installation: Run this command once after cloning:
 #   git config core.hooksPath .githooks
 #
 
-echo "Running PHPStan analysis before push..."
-
 # Change to repository root
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
-# Run PHPStan with Docker
+# ============================================
+# 1. Run PHPStan analysis
+# ============================================
+echo "Running PHPStan analysis..."
+
 RESULT=$(docker-compose exec -T php sh -c "php -d memory_limit=512M /var/www/html/vendor/bin/phpstan analyse -c /var/www/phpstan.neon" 2>&1)
 EXIT_CODE=$?
 
@@ -29,5 +31,36 @@ if [ $EXIT_CODE -ne 0 ]; then
     exit 1
 fi
 
-echo "PHPStan analysis passed. Proceeding with push..."
+echo "PHPStan analysis passed."
+
+# ============================================
+# 2. Run PHPCS (Code Style)
+# ============================================
+echo "Running PHPCS code style check..."
+
+RESULT=$(docker-compose exec -T php sh -c "/var/www/html/vendor/bin/phpcs --standard=PSR12 /var/www/html/classes /var/www/tests" 2>&1)
+EXIT_CODE=$?
+
+# Exit codes: 0 = no issues, 1 = errors, 2 = warnings only, 3 = fixable errors
+if [ $EXIT_CODE -eq 1 ] || [ $EXIT_CODE -ge 3 ]; then
+    echo ""
+    echo "=========================================="
+    echo "PHPCS code style check FAILED!"
+    echo "Push aborted."
+    echo "=========================================="
+    echo ""
+    echo "$RESULT"
+    echo ""
+    echo "Run 'docker-compose exec php composer phpcbf' to auto-fix style issues."
+    exit 1
+fi
+
+if [ $EXIT_CODE -eq 2 ]; then
+    echo "PHPCS passed with warnings:"
+    echo "$RESULT"
+else
+    echo "PHPCS code style check passed."
+fi
+echo ""
+echo "All checks passed. Proceeding with push..."
 exit 0

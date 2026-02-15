@@ -81,7 +81,7 @@ class ConfigTest extends TestCase
         $concurrency = Config::CONCURRENCY;
         $depth = Config::MAX_CRAWL_DEPTH;
         $redirect = Config::MAX_REDIRECT_THRESHOLD;
-        
+
         $this->assertSame(10, $concurrency);
         $this->assertSame(50, $depth);
         $this->assertSame(3, $redirect);

@@ -209,11 +209,11 @@ class Crawler
         if (str_contains($contentType, 'text/html') && $pageId > 0) {
             echo "Extracting links from: $url (pageId: $pageId)\n";
             $this->extractLinks($domCrawler, $url, $pageId, $depth);
-            
+
             // Extract and save images
             echo "Extracting images from: $url (pageId: $pageId)\n";
             $this->extractImages($domCrawler, $url, $pageId);
-            
+
             // Extract and save scripts
             echo "Extracting scripts from: $url (pageId: $pageId)\n";
             $this->extractScripts($domCrawler, $url, $pageId);
@@ -377,10 +377,10 @@ class Crawler
 
         try {
             $response = $this->client->head($imageUrl, ['allow_redirects' => true]);
-            
+
             $data['status_code'] = $response->getStatusCode();
             $data['content_type'] = $response->getHeaderLine('Content-Type');
-            
+
             // Get file size from Content-Length header
             $contentLength = $response->getHeaderLine('Content-Length');
             if ($contentLength) {
@@ -427,10 +427,10 @@ class Crawler
                 'headers' => ['Range' => 'bytes=0-32768'],  // Get first 32KB
                 'allow_redirects' => true
             ]);
-            
+
             $imageData = $response->getBody()->getContents();
             $dimensions = getimagesizefromstring($imageData);
-            
+
             if ($dimensions !== false) {
                 return [
                     'width' => $dimensions[0],
@@ -450,7 +450,7 @@ class Crawler
     private function extractScripts(DomCrawler $crawler, string $pageUrl, int $pageId): void
     {
         $scriptCount = 0;
-        
+
         // Extract external scripts (<script src="...">)
         $crawler->filter('script[src]')->each(function (DomCrawler $node) use ($pageUrl, $pageId, &$scriptCount) {
             try {
@@ -520,16 +520,16 @@ class Crawler
 
         try {
             $response = $this->client->head($scriptUrl, ['allow_redirects' => true]);
-            
+
             $data['status_code'] = $response->getStatusCode();
             $data['content_type'] = $response->getHeaderLine('Content-Type');
-            
+
             // Get file size from Content-Length header
             $contentLength = $response->getHeaderLine('Content-Length');
             if ($contentLength) {
                 $data['file_size'] = (int)$contentLength;
             }
-            
+
             // Track redirects
             if ($response->hasHeader('X-Guzzle-Redirect-History')) {
                 $redirectHistory = $response->getHeader('X-Guzzle-Redirect-History');
@@ -539,7 +539,7 @@ class Crawler
                     $data['redirect_url'] = $lastRedirect !== false ? $lastRedirect : null;
                 }
             }
-            
+
             // Try to get content hash by downloading the script (if small enough)
             if ($data['file_size'] !== null && $data['file_size'] < 500000) { // Only for scripts < 500KB
                 try {
@@ -614,7 +614,7 @@ class Crawler
 
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'tif', 'avif'];
-        
+
         return in_array($extension, $imageExtensions);
     }
 
@@ -630,7 +630,7 @@ class Crawler
 
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $scriptExtensions = ['js', 'mjs', 'jsx'];
-        
+
         return in_array($extension, $scriptExtensions);
     }
 

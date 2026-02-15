@@ -23,7 +23,7 @@ class CrawlerTest extends TestCase
         $this->testJobId = is_numeric($lastId) ? (int)$lastId : 0;
 
         $this->crawler = new Crawler($this->testJobId);
-        
+
         // Initialize baseDomain for tests that need it
         $this->setPrivateProperty($this->crawler, 'baseDomain', 'example.com');
     }
@@ -318,7 +318,7 @@ class CrawlerTest extends TestCase
         HTML;
 
         $domCrawler = new DomCrawler($html, 'https://example.com/page2');
-        
+
         // Capture output to check for "Skipping" message
         ob_start();
         $this->callPrivateMethod($this->crawler, 'extractImages', [$domCrawler, 'https://example.com/page2', $pageId2]);
@@ -375,7 +375,7 @@ class CrawlerTest extends TestCase
         HTML;
 
         $domCrawler = new DomCrawler($html, 'https://example.com/page2');
-        
+
         // Capture output to check for "Skipping" message
         ob_start();
         $this->callPrivateMethod($this->crawler, 'extractScripts', [$domCrawler, 'https://example.com/page2', $pageId2]);
@@ -426,4 +426,3 @@ class CrawlerTest extends TestCase
         $property->setValue($object, $value);
     }
 }
-
