@@ -1,7 +1,8 @@
 parameters:
     level: 8
     paths:
-        - /var/www/html
-        - /var/www/tests
+        - src
+        - tests
     excludePaths:
-        - /var/www/html/vendor
+        analyseAndScan:
+            - src/vendor (?)
