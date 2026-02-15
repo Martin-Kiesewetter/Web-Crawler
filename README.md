@@ -116,11 +116,19 @@ docker-compose up -d --build
 │   │   └── start.sh        # Container Start-Script
 │   └── nginx/
 │       └── default.conf    # Nginx Konfiguration
+├── public/                 # Öffentliche Assets
+│   ├── css/
+│   └── js/
 ├── src/                    # Anwendungscode
 │   ├── index.php           # Frontend UI
 │   ├── api.php             # REST API
 │   ├── crawler-worker.php  # Background Crawler Worker
 │   ├── composer.json       # Composer Config
+│   ├── public/             # UI Assets
+│   │   ├── css/
+│   │   │   └── index.css
+│   │   └── js/
+│   │       └── index.js
 │   └── classes/
 │       ├── Config.php      # Konfigurationskonstanten
 │       ├── Crawler.php     # Haupt-Crawler-Logik
@@ -130,6 +138,9 @@ docker-compose up -d --build
     │   ├── CrawlerTest.php
     │   ├── DatabaseTest.php
     │   └── ConfigTest.php
+    ├── Feature/            # Feature Tests
+    │   ├── ApiTest.php
+    │   └── SecurityTest.php
     └── Integration/        # Integration Tests
         └── CrawlerIntegrationTest.php
 ```
@@ -173,13 +184,13 @@ docker-compose exec php composer test
 ```
 
 **Test-Statistik:**
-- 35 Tests
-- 82 Assertions
 - Unit Tests: Crawler, Database, Config
+- Feature Tests: API, Security
 - Integration Tests: Full Crawl Workflows
 
 Die Tests befinden sich in:
 - `tests/Unit/` - Unit Tests für einzelne Komponenten
+- `tests/Feature/` - Feature Tests für API und Security
 - `tests/Integration/` - Integration Tests für vollständige Crawl-Workflows
 
 ### Statische Code-Analyse mit PHPStan

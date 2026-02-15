@@ -1,7 +1,7 @@
 ﻿# Repository Guidelines
 
 ## Project Structure & Module Organization
-The codebase is intentionally lean. `index.php` bootstraps the crawl by instantiating `webanalyse` and handing off the crawl identifier. Core crawling logic lives in `webanalyse.php`, which houses HTTP fetching, link extraction, and database persistence. Use `setnew.php` to reset seed data inside the `screaming_frog` schema before a rerun. Keep new helpers in their own PHP files under this root so the autoload includes stay predictable; group SQL migrations or fixtures under a `database/` folder if you add them. IDE settings reside in `.idea/`.
+The codebase is intentionally lean. `src/index.php` provides the frontend UI, while `src/api.php` handles REST API requests. Core crawling logic lives in `src/classes/Crawler.php`, which houses HTTP fetching, link extraction, and database persistence. `src/crawler-worker.php` runs as a background process for parallel crawling. Database interactions are managed through `src/classes/Database.php` (singleton pattern), and configuration constants are in `src/classes/Config.php`. Keep new helpers in their own PHP files under `src/classes/` so the autoload includes stay predictable; group SQL migrations or fixtures under a `database/` folder if you add them. IDE settings reside in `.idea/`.
 
 ## Build, Test, and Development Commands
 
@@ -35,6 +35,7 @@ docker-compose exec php composer test
 
 **Test Structure:**
 - `tests/Unit/` - Unit tests for individual components
+- `tests/Feature/` - Feature tests for API and Security
 - `tests/Integration/` - Integration tests for full crawl workflows
 - All tests run in isolated database transactions
 
@@ -112,4 +113,9 @@ For UI changes, manually test the crawler interface at http://localhost:8080. Ve
 Author commit messages in the present tense with a concise summary (`Add link grouping for external URLs`). Group related SQL adjustments with their PHP changes in the same commit. For pull requests, include: a short context paragraph, reproduction steps, screenshots of key output tables when behaviour changes, and any follow-up tasks. Link tracking tickets or issues so downstream agents can trace decisions.
 
 ## Security & Configuration Notes
-Database credentials are currently hard-coded for local XAMPP usage. If you introduce environment-based configuration, document expected `.env` keys and ensure credentials are excluded from version control. Never commit production connection details or raw crawl exports.
+Database credentials are configured via Docker environment variables in `docker-compose.yml`. The application uses the following services:
+- **MariaDB**: Primary database (port 3306)
+- **phpMyAdmin**: Database management UI at http://localhost:8081
+- **Nginx**: Web server with PHP-FPM
+
+If you introduce additional environment-based configuration, document expected `.env` keys and ensure credentials are excluded from version control. Never commit production connection details or raw crawl exports.
