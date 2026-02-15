@@ -167,9 +167,9 @@ try {
         case 'images':
             $jobId = $_GET['job_id'] ?? 0;
             $filter = $_GET['filter'] ?? 'all';
-            
+
             $query = "SELECT * FROM images WHERE crawl_job_id = ?";
-            
+
             // Apply filters
             if ($filter === 'broken') {
                 $query .= " AND (status_code IS NULL OR status_code >= 400)";
@@ -182,9 +182,9 @@ try {
             } elseif ($filter === 'with-redirects') {
                 $query .= " AND redirect_count > 0";
             }
-            
+
             $query .= " ORDER BY id DESC LIMIT 2000";
-            
+
             $stmt = $db->prepare($query);
             $stmt->execute([$jobId]);
             $images = $stmt->fetchAll();
@@ -199,9 +199,9 @@ try {
         case 'assets':
             $jobId = $_GET['job_id'] ?? 0;
             $type = $_GET['type'] ?? 'all'; // all, page, image, script
-            
+
             $assets = [];
-            
+
             // Fetch pages
             if ($type === 'all' || $type === 'page') {
                 $stmt = $db->prepare(
@@ -212,7 +212,7 @@ try {
                 $pages = $stmt->fetchAll();
                 $assets = array_merge($assets, $pages);
             }
-            
+
             // Fetch images
             if ($type === 'all' || $type === 'image') {
                 $stmt = $db->prepare(
@@ -223,7 +223,7 @@ try {
                 $images = $stmt->fetchAll();
                 $assets = array_merge($assets, $images);
             }
-            
+
             // Fetch scripts
             if ($type === 'all' || $type === 'script') {
                 $stmt = $db->prepare(
@@ -234,7 +234,7 @@ try {
                 $scripts = $stmt->fetchAll();
                 $assets = array_merge($assets, $scripts);
             }
-            
+
             echo json_encode([
                 'success' => true,
                 'assets' => $assets,
@@ -347,18 +347,18 @@ try {
         case 'nofollow-links':
             $jobId = $_GET['job_id'] ?? 0;
             $filter = $_GET['filter'] ?? 'all';
-            
+
             $query = "SELECT * FROM links WHERE crawl_job_id = ? AND is_nofollow = 1";
-            
+
             // Apply filters
             if ($filter === 'internal') {
                 $query .= " AND is_internal = 1";
             } elseif ($filter === 'external') {
                 $query .= " AND is_internal = 0";
             }
-            
+
             $query .= " ORDER BY source_url, target_url";
-            
+
             $stmt = $db->prepare($query);
             $stmt->execute([$jobId]);
             $nofollowLinks = $stmt->fetchAll();
@@ -413,7 +413,7 @@ try {
 
         case 'delete':
             $jobId = $_POST['job_id'] ?? 0;
-            
+
             // Delete all related data before deleting the job
             $stmt = $db->prepare("DELETE FROM crawl_queue WHERE crawl_job_id = ?");
             $stmt->execute([$jobId]);
