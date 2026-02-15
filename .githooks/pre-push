@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# Pre-push hook: Runs PHPStan analysis before allowing push
+# Aborts push if PHPStan finds errors
+#
+# Installation: Run this command once after cloning:
+#   git config core.hooksPath .githooks
+#
+
+echo "Running PHPStan analysis before push..."
+
+# Change to repository root
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# Run PHPStan with Docker
+RESULT=$(docker-compose exec -T php sh -c "php -d memory_limit=512M /var/www/html/vendor/bin/phpstan analyse -c /var/www/phpstan.neon" 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "=========================================="
+    echo "PHPStan analysis FAILED!"
+    echo "Push aborted."
+    echo "=========================================="
+    echo ""
+    echo "$RESULT"
+    echo ""
+    echo "Please fix the errors above before pushing."
+    exit 1
+fi
+
+echo "PHPStan analysis passed. Proceeding with push..."
+exit 0
