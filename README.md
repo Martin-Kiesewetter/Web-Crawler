@@ -1,6 +1,11 @@
+
+
 # Web Crawler - Freies Analysetool
 
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
 [![PHP CI](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpcs.yml/badge.svg)](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpcsci.yml) [![PHP CI](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpstan.yml/badge.svg)](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpstan.yml) [![PHP CI](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpunit.yml/badge.svg)](https://github.com/Martin-Kiesewetter/Web-Crawler/actions/workflows/phpunit.yml)
+---
 
 Eine leistungsstarke PHP-basierte Web-Crawler-Anwendung mit MariaDB, die in Docker läuft. Der Crawler extrahiert und analysiert Seiten, Links, Bilder und JavaScript-Dateien mit umfangreichen Metadaten.
 
@@ -291,7 +296,3 @@ docker-compose exec php composer install
 docker-compose down -v
 docker-compose up -d
 ```
-
-## Lizenz
-
-Alle Rechte vorbehalten © 2025 Martin Kiesewetter
